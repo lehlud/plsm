@@ -1,8 +1,13 @@
 # plsm
 ## Stack Machine
 ### Befehle
-Grundsätzlich werden bei jeder Operation die verwendeten Werte vom Stapel gelöscht.
+Grundsätzlich werden bei jeder Operation die verwendeten Werte vom Stapel gelöscht und durch das Ergebnis ersetzt.
 
+Beispiel $a + b = c$:
+- $a$ und $b$ werden vom Stapel entfernt
+- $c$ wird auf den Stapel geschoben
+
+### Befehlsübersicht
 | ID  | Befehl  | Argument         | Wirkung                                                           |
 | --- | ------- | ---------------- | ----------------------------------------------------------------- |
 | 0   | NOP     | –                | Macht nichts                                                      |
