@@ -52,6 +52,6 @@ plsm -c -f <SRC> -o <OUT>
 ```
 
 ### Ausführen
-```
+```bash
 plsm -f <FILE>
 ```
