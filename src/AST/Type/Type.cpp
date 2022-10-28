@@ -1,6 +1,6 @@
 #include "Type.h"
 
-#include "../Compiler/BuildContext.h"
+#include "../../Compiler/BuildContext.h"
 
 namespace plsm
 {

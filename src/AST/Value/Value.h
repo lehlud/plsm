@@ -11,7 +11,6 @@ namespace plsm
 
   namespace AST
   {
-
     class Value
     {
     public:

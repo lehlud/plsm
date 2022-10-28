@@ -11,7 +11,9 @@ namespace plsm
     class VariableStore
     {
     public:
-          std::shared_ptr<llvm::Value *> llvmValue;
+      llvm::Value *llvmValue;
+
+      VariableStore(llvm::Value *llvmValue) : llvmValue(llvmValue) {}
     };
   }
 }

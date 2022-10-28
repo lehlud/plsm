@@ -1,8 +1,8 @@
 #include "Function.h"
 
-#include "Type.h"
 #include "Value.h"
-#include "../Compiler/BuildContext.h"
+#include "../Type/Type.h"
+#include "../../Compiler/BuildContext.h"
 
 #include <llvm/IR/Function.h>
 
@@ -25,10 +25,21 @@ namespace plsm
       auto block = llvm::BasicBlock::Create(*ctx->llvmContext, "", fn);
       ctx->llvmBuilder->SetInsertPoint(block);
 
-      // TODO: Allocate arguments
+      // initialize new scope
+      ctx->variableScopes.push_back(Compiler::VariableScope());
+
+      for (uint64_t i = 0; i < fn->arg_size(); i++)
+      {
+        auto alloc = ctx->llvmBuilder->CreateAlloca(argTypes[i]);
+        ctx->llvmBuilder->CreateStore(fn->getArg(i), alloc);
+        ctx->variableScopes.back().values[this->args[i].first] = alloc;
+      }
 
       auto result = this->result->genCode(ctx);
       ctx->llvmBuilder->CreateRet(result);
+
+      // destroy created scope
+      ctx->variableScopes.pop_back();
 
       ctx->llvmBuilder->SetInsertPoint(prevBlock);
 

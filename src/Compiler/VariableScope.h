@@ -3,6 +3,8 @@
 #include <map>
 #include <string>
 
+#include "VariableStore.h"
+
 #include <llvm/IR/Value.h>
 
 namespace plsm
@@ -18,7 +20,7 @@ namespace plsm
     class VariableScope
     {
     public:
-      std::map<std::string, llvm::Value *> values;
+      std::map<std::string, VariableStore> values;
     };
   }
 }
