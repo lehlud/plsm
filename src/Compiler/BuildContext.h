@@ -24,7 +24,20 @@ namespace plsm
       std::unique_ptr<llvm::LLVMContext> llvmContext;
       std::unique_ptr<llvm::IRBuilder<>> llvmBuilder;
 
-      inline void updateStore(std::string name, llvm::Value *value)
+      inline VariableStore getStore(std::string name)
+      {
+        // search for an existing store and update it (if the store exists)
+        for (auto it = variableScopes.end(); it != variableScopes.begin(); --it)
+        {
+          auto scope = *it.base();
+          if (scope.values.count(name))
+          {
+            return scope.values[name];
+          }
+        }
+      }
+
+      inline void getOrCreateStore(std::string name, llvm::Value *value)
       {
         // search for an existing store and update it (if the store exists)
         for (auto it = variableScopes.end(); it != variableScopes.begin(); --it)
