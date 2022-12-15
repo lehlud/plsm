@@ -13,13 +13,13 @@ namespace plsm
     llvm::Value *Function::genCode(std::shared_ptr<Compiler::BuildContext> ctx)
     {
       std::vector<llvm::Type *> argTypes;
-      for (auto &arg : args)
+      for (auto &arg : this->args)
       {
         argTypes.push_back(arg.second->llvmType(ctx));
       }
 
       auto fnType = llvm::FunctionType::get(resultType->llvmType(ctx), argTypes, false);
-      auto fn = llvm::Function::Create(fnType, llvm::Function::ExternalLinkage, name, *ctx->llvmModule);
+      auto fn = llvm::Function::Create(fnType, llvm::Function::ExternalLinkage, this->name, *ctx->llvmModule);
 
       auto prevBlock = ctx->llvmBuilder->GetInsertBlock();
       auto block = llvm::BasicBlock::Create(*ctx->llvmContext, "", fn);
@@ -28,11 +28,12 @@ namespace plsm
       // initialize new scope
       ctx->variableScopes.push_back(Compiler::VariableScope());
 
+      // initialize stores for arguments
       for (uint64_t i = 0; i < fn->arg_size(); i++)
       {
         auto alloc = ctx->llvmBuilder->CreateAlloca(argTypes[i]);
         ctx->llvmBuilder->CreateStore(fn->getArg(i), alloc);
-        ctx->variableScopes.back().values[this->args[i].first] = alloc;
+        ctx->createStore(this->args[i].first, alloc);
       }
 
       auto result = this->result->genCode(ctx);

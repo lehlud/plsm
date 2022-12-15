@@ -1,0 +1,11 @@
+{
+	"name": "Ubuntu LLVM",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"remoteUser": "vscode",
+	"extensions": [
+		"llvm-vs-code-extensions.vscode-clangd",
+		"ms-vscode.makefile-tools"
+	]
+}
