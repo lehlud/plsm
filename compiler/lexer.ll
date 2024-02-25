@@ -4,10 +4,10 @@
 
 #define yyterminate() yy::parser::make_END(yy::location())
 
-#define _token(token) yy::parser::make_##token(driver.location)
+#define _token(token) yy::parser::make_##token(yytext, driver.location)
 %}
 
-%option noyywrap nounput noinput batch debug
+%option noyywrap nounput noinput batch
 
 digit       [0-9]
 bindigit    [0-1]
@@ -15,6 +15,8 @@ octdigit    [0-7]
 hexdigit    [0-9a-fA-F]
 
 letter      [a-zA-Z]
+
+opchar      ("+"|"-"|"*"|"/"|"%"|"!"|"&"|"$"|"§"|"|"|"="|"<"|">"|"?"|"~"|"#"|":"|"^"|"\\")
 
 whitespace  [ \n\t\r\v]+
 
@@ -27,14 +29,18 @@ whitespace  [ \n\t\r\v]+
 
 {digit}*"."{digit}+   { return yy::parser::make_FLOAT(std::strtod(yytext, NULL), driver.location); }
 
-// TODO: operator '==' won't work this way
-"->"    { return _token(R_ARR); }
-"<-"    { return _token(L_ARR); }
-";"     { return _token(SEMI); }
-"="     { return _token(EQUALS); } 
 
-("+"|"-"|"*"|"/"|"%"|"!"|"&"|"$"|"§"|"|"|"="|"<"|">"|"?"|"~"|"#"|":"|"^"|"\\")+  { return _token(OPERATOR); }
+{opchar}+     { std::string text = yytext;
+                if (text == "=") return _token(EQUALS);
+                if (text == "->") return _token(RARR);
+                return _token(OPERATOR); }
 
+","           { return _token(COMMA); }
+";"           { return _token(SEMI); }
+"("           { return _token(LPAREN); }
+")"           { return _token(RPAREN); }
+"["           { return _token(LBRACKET); }
+"]"           { return _token(RBRACKET); }
 
 "fn"          { return _token(FN); }
 "unop"        { return _token(UNOP); }
@@ -44,7 +50,9 @@ whitespace  [ \n\t\r\v]+
 "declare"     { return _token(DECLARE); }
 
 
-{letter}({digit}|{letter})*   { return yy::parser::make_IDENTIFIER(yytext, driver.location); }
+{letter}({digit}|{letter})*   { return _token(IDENTIFIER); }
+
+<<EOF>>   { return yy::parser::make_END(driver.location); }
 
 {whitespace}                  { ; }
 

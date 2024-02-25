@@ -6,4 +6,5 @@ set(CMAKE_C_STANDARD 11)
 
 file(GLOB_RECURSE sources ${CMAKE_SOURCE_DIR}/src/*.c)
 include_directories(${CMAKE_SOURCE_DIR}/include)
-add_library(libplsm SHARED ${sources})
+add_library(plsm SHARED ${sources})
+target_link_libraries(plsm gc)
