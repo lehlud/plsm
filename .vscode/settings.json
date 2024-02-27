@@ -83,6 +83,7 @@
     "set": "cpp",
     "unordered_set": "cpp",
     "source_location": "cpp",
-    "shared_mutex": "cpp"
+    "shared_mutex": "cpp",
+    "strstream": "cpp"
   },
 }

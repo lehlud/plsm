@@ -25,6 +25,6 @@ int main(int argc, char *argv[])
   auto parser = ParserDriver();
   parser.parse(buf.str());
 
-  auto fn = (FnDecl *)parser.module->stmts.at(0);
+  auto fn = (ast::FnDecl *)parser.module->stmts.at(0);
   std::cout << fn->name << std::endl;
 }

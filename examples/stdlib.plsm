@@ -1,29 +1,33 @@
-type Bool = class {
+type Bool = {
   declare unop ! Bool;
 
-  declare binop &&(b Bool) Bool;
-  declare binop ||(b Bool) Bool;
+  declare binop &&[b Bool] Bool;
+  declare binop ||[b Bool] Bool;
 };
 
-type Int = class {
+type Int = {
   declare unop + Int;
   declare unop - Int;
 
-  declare binop ==(Int) Bool;
-  declare binop !=(Int) Bool;
-  declare binop >(Int) Bool;
-  declare binop <(Int) Bool;
-  declare binop >=(Int) Bool;
-  declare binop <=(Int) Bool;
+  declare binop ==[Int] Bool;
+  declare binop !=[Int] Bool;
+  declare binop >[Int] Bool;
+  declare binop <[Int] Bool;
+  declare binop >=[Int] Bool;
+  declare binop <=[Int] Bool;
 
-  declare binop +(Int) Int;
-  declare binop -(Int) Int;
-  declare binop *(Int) Int;
-  declare binop /(Int) Int;
-  declare binop %(Int) Int;
+  declare binop +[Int] Int;
+  declare binop -[Int] Int;
+  declare binop *[Int] Int;
+  declare binop /[Int] Int;
+  declare binop %[Int] Int;
 
-  declare factory (f Float);
-  declare factory ();
+  declare factory [f Float];
+  declare factory [];
 
-  declare fn str() String; 
+  declare fn str[] String; 
+};
+
+trait List{T} = {
+  fn
 };

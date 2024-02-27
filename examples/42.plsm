@@ -1,1 +1,9 @@
+import test.test;
+
 fn main[] Int = 42;
+
+fn test[b Int] Int = {
+  fn helper[] Int = 10;
+  20 * b;
+};
+

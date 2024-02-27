@@ -2,13 +2,14 @@
 
 #include <string>
 
-#include "AST.h"
+#include "AST/Def.h"
 #include "parser.gen.h"
 
 class ParserDriver
 {
 public:
   ParserDriver() {}
+  ~ParserDriver() { delete module; }
 
   int parse(const std::string &input);
 
@@ -17,7 +18,7 @@ public:
 
   std::string file;
   yy::location location;
-  Module *module;
+  ast::Module *module;
 };
 
 #define YY_DECL yy::parser::symbol_type yylex(ParserDriver &driver)

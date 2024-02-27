@@ -35,19 +35,24 @@ whitespace  [ \n\t\r\v]+
                 if (text == "->") return _token(RARR);
                 return _token(OPERATOR); }
 
+"."           { return _token(DOT); }
 ","           { return _token(COMMA); }
 ";"           { return _token(SEMI); }
 "("           { return _token(LPAREN); }
 ")"           { return _token(RPAREN); }
 "["           { return _token(LBRACKET); }
 "]"           { return _token(RBRACKET); }
+"{"           { return _token(LBRACE); }
+"}"           { return _token(RBRACE); }
 
-"fn"          { return _token(FN); }
-"unop"        { return _token(UNOP); }
 "binop"       { return _token(BINOP); }
-"val"         { return _token(VAL); }
-"import"      { return _token(IMPORT); }
 "declare"     { return _token(DECLARE); }
+"fn"          { return _token(FN); }
+"import"      { return _token(IMPORT); }
+"trait"       { return _token(TRAIT); }
+"type"        { return _token(TYPE); }
+"unop"        { return _token(UNOP); }
+"val"         { return _token(VAL); }
 
 
 {letter}({digit}|{letter})*   { return _token(IDENTIFIER); }
