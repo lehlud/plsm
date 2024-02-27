@@ -13,6 +13,7 @@ namespace ast
 
     ~CallExpr()
     {
+      delete callee;
       for (auto &arg : args)
         delete arg;
     }

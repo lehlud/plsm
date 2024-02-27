@@ -11,9 +11,12 @@
 
 #include "Stmt/ExprStmt.h"
 #include "Stmt/FnDecl.h"
+#include "Stmt/TraitDecl.h"
+#include "Stmt/TypeDecl.h"
 #include "Stmt/ValDecl.h"
 
 #include "Type/Function.h"
+#include "Type/Generic.h"
 #include "Type/Named.h"
 #include "Type/Tuple.h"
 

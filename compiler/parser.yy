@@ -19,14 +19,15 @@
 
 %code requires {
 #include "AST/Def.h"
-class ParserDriver;
+class Parser;
 }
 
-%lex-param { ParserDriver &driver }
-%parse-param { ParserDriver &driver }
+%lex-param { Parser &driver }
+%parse-param { Parser &driver }
 
 %code {
-#include "ParserDriver.h"
+#include "Parser.h"
+yy::parser::symbol_type yylex(Parser &driver);
 }
 
 %token <long> INT "integer literal"
@@ -70,7 +71,8 @@ class ParserDriver;
   blockStmt
 ;
 
-%type <ast::FnDecl *> extFnDecl fnDecl;
+%type <std::vector<ast::FnDecl *>> fnDecls fnDecls0;
+%type <ast::FnDecl *> fnDecl fnDef;
 %type <ast::ValDecl *> valDecl;
 
 %type <std::vector<ast::Type *>>
@@ -79,14 +81,9 @@ class ParserDriver;
   fnTypeArgs
 ;
 
-%type <ast::Type *>
-  type
-;
+%type <ast::Type *> type type1;
 
-%type <std::vector<ast::Expr *>>
-  exprs
-  args
-;
+%type <std::vector<ast::Expr *>> exprs args;
 
 %type <ast::Expr *>
   expr
@@ -98,10 +95,7 @@ class ParserDriver;
 ;
 
 %type <ast::FnArg> fnArg;
-%type <std::vector<ast::FnArg>>
-  fnArgs
-  fnArgs0
-;
+%type <std::vector<ast::FnArg>> fnArgs fnArgs0;
 
 %type <std::vector<std::string>>
   lambdaArgs
@@ -110,6 +104,7 @@ class ParserDriver;
 
 %type <std::string>
   moduleName
+  type0
   operator
   identifier
   keyword
@@ -121,11 +116,14 @@ class ParserDriver;
   imports
 ;
 
+%type <ast::TraitDecl *> traitDecl;
+%type <ast::TypeDecl *> typeDecl;
+
 %start module
 
 %%
 
-module: imports topLevelStmts { driver.module = new ast::Module($2); }
+module: imports topLevelStmts { driver.module = new ast::Module($1, $2); }
       ;
 
 
@@ -144,14 +142,15 @@ moduleName: identifier                  { $$ = $1; }
           | moduleName "." identifier   { $$ = $1 + $2 + $3; }
           ;
 
-
 topLevelStmts: topLevelStmt                 { $$.push_back($1); }
              | topLevelStmts topLevelStmt   { $1.push_back($2); $$ = std::move($1); }
              ;
 
-topLevelStmt: fnDecl      { $$ = $1; }
-            | extFnDecl   { $$ = $1; }
+topLevelStmt: fnDef       { $$ = $1; }
+            | fnDecl      { $$ = $1; }
             | valDecl     { $$ = $1; }
+            | typeDecl    { $$ = $1; }
+            | traitDecl   { $$ = $1; }
             ;
 
 blockStmts: blockStmt              { $$.push_back($1); }
@@ -159,19 +158,33 @@ blockStmts: blockStmt              { $$.push_back($1); }
           ;
 
 blockStmt: valDecl    { $$ = $1; }
-         | fnDecl     { $$ = $1; }
+         | fnDef      { $$ = $1; }
          | expr ";"   { $$ = new ast::ExprStmt($1); }
          ;
+
+traitDecl: TRAIT identifier "=" "{" fnDecls "}"   { $$ = new ast::TraitDecl($2, $5); }
+         ;
+
+typeDecl: TYPE identifier "=" "(" fnArgs ")" "{" fnDecls "}"   { $$ = new ast::TypeDecl($2, $5, $8); }
+        ;
+
+fnDecls: %empty   { ; }
+       | fnDecls0 { $$ = std::move($1); }
+       ;
+
+fnDecls0: fnDecl            { $$.push_back($1); }
+        | fnDecls0 fnDecl   { $1.push_back($2); $$ = std::move($1); }
+        ;
 
 valDecl: VAL identifier "=" expr ";"        { $$ = new ast::ValDecl($2, nullptr, $4); }
        | VAL identifier type "=" expr ";"   { $$ = new ast::ValDecl($2, $3, $5); }
        ;
 
-fnDecl: FN identifier "[" fnArgs "]" type "=" expr ";"  { $$ = new ast::FnDecl($2, $4, $6, $8); }
+fnDef : FN identifier "[" fnArgs "]" type "=" expr ";"  { $$ = new ast::FnDecl($2, $4, $6, $8); }
       ;
 
-extFnDecl: DECLARE FN identifier "[" fnArgs "]" type ";"  { $$ = new ast::FnDecl($3, $5, $7, nullptr); }
-         ;
+fnDecl: FN identifier "[" fnArgs "]" type ";"  { $$ = new ast::FnDecl($2, $4, $6, nullptr); }
+      ;
 
 fnArgs: %empty    { ; }
       | fnArgs0   { $$ = std::move($1); }
@@ -188,11 +201,17 @@ types: type             { $$.push_back($1); }
      | types "," type   { $1.push_back($3); $$ = std::move($1); }
      ;
 
-type: identifier                     { $$ = new ast::NamedType($1); }
+type: type1
     | "(" type ")"                   { $$ = $2; }   
     | "(" tupleTypes ")"             { $$ = new ast::TupleType($2); }
     | "[" fnTypeArgs "]" "->" type   { $$ = new ast::FunctionType($2, $5); }
     ;
+
+type1: type0                { $$ = new ast::NamedType($1); }
+     | type0 "{" types "}"  { $$ = new ast::GenericType($1, $3); }
+     ;
+
+type0: identifier;
 
 tupleTypes: type "," type             { $$.push_back($1); $$.push_back($3); }
           | tupleTypes "," type       { $1.push_back($3); $$ = std::move($1); }
@@ -210,8 +229,8 @@ expr: expr3 { $$ = $1; }
     ;
 
 expr3: expr2                          { $$ = $1; }
-     | "[" lambdaArgs "]" "->" expr   { $$ = NULL; }
-     | "{" blockStmts "}"                  { $$ = new ast::BlockExpr($2); }
+     | "[" lambdaArgs "]" "->" expr   { $$ = nullptr; }
+     | "{" blockStmts "}"             { $$ = new ast::BlockExpr($2); }
      ;
 
 expr2: expr1                  { $$ = $1; }
@@ -226,6 +245,7 @@ expr0: literal              { $$ = $1; }
      | identifier           { $$ = new ast::Identifier($1); }
      | expr0 "[" args "]"   { $$ = new ast::CallExpr($1, $3); }
      | "(" expr ")"         { $$ = new ast::PrefExpr($2); }
+     | expr0 "." identifier { $$ = $1; }
      ;
 
 lambdaArgs: %empty        { ; }

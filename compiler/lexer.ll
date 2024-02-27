@@ -1,6 +1,9 @@
 %{
 #include "parser.gen.h"
-#include "ParserDriver.h"
+#include "Parser.h"
+
+#undef YY_DECL
+#define YY_DECL yy::parser::symbol_type yylex(Parser &driver)
 
 #define yyterminate() yy::parser::make_END(yy::location())
 
@@ -16,7 +19,7 @@ hexdigit    [0-9a-fA-F]
 
 letter      [a-zA-Z]
 
-opchar      ("+"|"-"|"*"|"/"|"%"|"!"|"&"|"$"|"§"|"|"|"="|"<"|">"|"?"|"~"|"#"|":"|"^"|"\\")
+opchar      ("+"|"-"|"*"|"/"|"%"|"!"|"&"|"$"|"§"|"|"|"="|"<"|">"|"?"|"~"|"#"|":"|"^"|"\\"|".")
 
 whitespace  [ \n\t\r\v]+
 
@@ -33,9 +36,9 @@ whitespace  [ \n\t\r\v]+
 {opchar}+     { std::string text = yytext;
                 if (text == "=") return _token(EQUALS);
                 if (text == "->") return _token(RARR);
+                if (text == ".") return _token(DOT);
                 return _token(OPERATOR); }
 
-"."           { return _token(DOT); }
 ","           { return _token(COMMA); }
 ";"           { return _token(SEMI); }
 "("           { return _token(LPAREN); }
@@ -62,9 +65,3 @@ whitespace  [ \n\t\r\v]+
 {whitespace}                  { ; }
 
 %%
-
-void ParserDriver::startLexer() {
-  yy_scan_string(this->file.data());
-}
-
-void ParserDriver::stopLexer() {}
