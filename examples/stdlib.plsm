@@ -1,33 +1,38 @@
 type Bool = {
-  declare unop ! Bool;
+  native unop ! Bool;
 
-  declare binop &&[b Bool] Bool;
-  declare binop ||[b Bool] Bool;
+  native binop ||[Bool] Bool;
+  native binop &&[Bool] Bool;
 };
+
+type Byte = {};
 
 type Int = {
-  declare unop + Int;
-  declare unop - Int;
+  native unop + Int;
+  native unop - Int;
+  native unop ~ Int;
 
-  declare binop ==[Int] Bool;
-  declare binop !=[Int] Bool;
-  declare binop >[Int] Bool;
-  declare binop <[Int] Bool;
-  declare binop >=[Int] Bool;
-  declare binop <=[Int] Bool;
+  native binop ==[Int] Bool;
+  native binop !=[Int] Bool;
+  native binop >[Int] Bool;
+  native binop <[Int] Bool;
+  native binop >=[Int] Bool;
+  native binop <=[Int] Bool;
 
-  declare binop +[Int] Int;
-  declare binop -[Int] Int;
-  declare binop *[Int] Int;
-  declare binop /[Int] Int;
-  declare binop %[Int] Int;
+  native binop <<[Int] Int;
+  native binop >>[Int] Int;
+  native binop |[Int] Int;
+  native binop &[Int] Int;
 
-  declare factory [f Float];
-  declare factory [];
+  native binop +[Int] Int;
+  native binop -[Int] Int;
+  native binop *[Int] Int;
+  native binop /[Int] Int;
+  native binop %[Int] Int;
 
-  declare fn str[] String; 
+  fn str[] String; 
 };
 
-trait List{T} = {
-  fn
+type Float = {
+
 };

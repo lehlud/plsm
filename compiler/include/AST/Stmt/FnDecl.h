@@ -3,29 +3,21 @@
 #include "AST/Base.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace ast
 {
-  typedef std::pair<std::string, Type *> FnArg;
+  typedef std::pair<std::string, std::unique_ptr<Type>> FnArg;
 
   class FnDecl : public Stmt
   {
-  public:
-    FnDecl(const std::string &name, const std::vector<FnArg> &args, const Type *returnType, const Expr *body)
-        : name(name), args(std::move(args)), returnType(returnType), body(body) {}
-
-    ~FnDecl()
-    {
-      for (auto &arg : args)
-        delete arg.second;
-
-      delete returnType;
-      delete body;
-    }
-
     const std::string name;
     const std::vector<FnArg> args;
-    const Type *returnType;
-    const Expr *body;
+    const std::unique_ptr<Type> returnType;
+    const std::unique_ptr<Expr> body;
+
+  public:
+    FnDecl(const std::string &name, std::vector<FnArg> &args, std::unique_ptr<Type> &returnType, std::unique_ptr<Expr> &body)
+        : name(name), args(std::move(args)), returnType(std::move(returnType)), body(std::move(body)) {}
   };
 }

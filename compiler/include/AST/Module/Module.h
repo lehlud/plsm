@@ -2,6 +2,7 @@
 
 #include "AST/Base.h"
 #include <vector>
+#include <memory>
 
 namespace ast
 {
@@ -9,20 +10,11 @@ namespace ast
 
   class Module : public ASTNode
   {
+    const std::vector<std::unique_ptr<Import>> imports;
+    const std::vector<std::unique_ptr<Stmt>> stmts;
+
   public:
-    Module(const std::vector<Import *> &imports, const std::vector<Stmt *> &stmts)
+    Module(std::vector<std::unique_ptr<Import>> &imports, std::vector<std::unique_ptr<Stmt>> &stmts)
         : imports(std::move(imports)), stmts(std::move(stmts)) {}
-
-    ~Module()
-    {
-      for (auto &import : imports)
-        delete import;
-
-      for (auto &stmt : stmts)
-        delete stmt;
-    }
-
-    const std::vector<Import *> &imports;
-    const std::vector<Stmt *> stmts;
   };
 }

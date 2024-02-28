@@ -3,26 +3,37 @@ cmake_minimum_required(VERSION 3.25)
 project(plasmatum)
 
 set(CMAKE_CXX_STANDARD 23)
-set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
-set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
+set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
 
-find_package(FLEX REQUIRED)
-find_package(BISON REQUIRED)
+set(GEN_DIR ${CMAKE_SOURCE_DIR}/generated)
 
-BISON_TARGET(parser
-  ${CMAKE_SOURCE_DIR}/parser.yy
-  ${SOURCE_DIR}/parser.gen.cpp
-  DEFINES_FILE ${INCLUDE_DIR}/parser.gen.h)
+set(ANTLR_INC ${INC_DIR}/plsmLexer.h ${INC_DIR}/plsmParser.h ${INC_DIR}/plsmVisitor.h ${INC_DIR}/plsmBaseVisitor.h)
+set(ANTLR_SRC ${SRC_DIR}/plsmLexer.cpp ${SRC_DIR}/plsmParser.cpp ${SRC_DIR}/plsmVisitor.cpp ${SRC_DIR}/plsmBaseVisitor.cpp)
 
-FLEX_TARGET(lexer
-  ${CMAKE_SOURCE_DIR}/lexer.ll
-  ${SOURCE_DIR}/lexer.gen.cpp)
+add_custom_command(PRE_BUILD
+  DEPENDS ${CMAKE_SOURCE_DIR}/plsm.g4
+  OUTPUT ${ANTLR_SRC}
+  OUTPUT ${ANTLR_INC}
+  COMMENT "Generating plsm_parser"
+  COMMAND java -jar
+    ${CMAKE_SOURCE_DIR}/thirdparty/antlr-4.13.1-complete.jar
+    ${CMAKE_SOURCE_DIR}/plsm.g4
+    -o ${GEN_DIR} -Dlanguage=Cpp -no-listener -visitor
+  COMMAND ${CMAKE_COMMAND} -E copy ${GEN_DIR}/*.h ${INC_DIR}
+  COMMAND ${CMAKE_COMMAND} -E copy ${GEN_DIR}/*.cpp ${SRC_DIR})
 
-ADD_FLEX_BISON_DEPENDENCY(lexer parser)
+file(GLOB_RECURSE sources ${SRC_DIR}/*.cpp)
+set(sources ${sources} ${ANTLR_SRC})
 
-file(GLOB_RECURSE sources ${SOURCE_DIR}/*.cpp)
-set(sources ${sources} ${FLEX_lexer_OUTPUTS})
-set(sources ${sources} ${BISON_parser_OUTPUT_SOURCE})
-
-include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable(plsm ${sources})
+
+target_include_directories(plsm PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(plsm PRIVATE /usr/include/antlr4-runtime)
+target_link_libraries(plsm antlr4-runtime)
+
+add_custom_target(clean-all
+  COMMAND ${CMAKE_COMMAND} -E rm -rf
+    ${GEN_DIR} ${CMAKE_SOURCE_DIR}/build
+)
+

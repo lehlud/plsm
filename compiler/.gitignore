@@ -1,1 +1,8 @@
-*.gen.*
+# antlr
+.antlr/
+*.interp
+*.tokens
+
+# antlr-generated files
+plsm*.h
+plsm*.cpp

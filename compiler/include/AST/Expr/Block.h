@@ -2,19 +2,15 @@
 
 #include "AST/Base.h"
 #include <vector>
+#include <memory>
 
 namespace ast
 {
   class BlockExpr : public Expr
   {
-  public:
-    BlockExpr(const std::vector<Stmt *> &stmts) : stmts(std::move(stmts)) {}
-    ~BlockExpr()
-    {
-      for (auto &stmt : stmts)
-        delete stmt;
-    }
+    const std::vector<std::unique_ptr<Stmt>> stmts;
 
-    const std::vector<Stmt *> stmts;
+  public:
+    BlockExpr(std::vector<std::unique_ptr<Stmt>> &stmts) : stmts(std::move(stmts)) {}
   };
 }

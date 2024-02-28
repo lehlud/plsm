@@ -1,15 +1,15 @@
 #pragma once
 
 #include "AST/Base.h"
+#include <memory>
 
 namespace ast
 {
   class ExprStmt : public Stmt
   {
-  public:
-    ExprStmt(const Expr *expr) : expr(expr) {}
-    ~ExprStmt() { delete expr; }
+    const std::unique_ptr<Expr> expr;
 
-    const Expr *expr;
+  public:
+    ExprStmt(std::unique_ptr<Expr> &expr) : expr(std::move(expr)) {}
   };
 }

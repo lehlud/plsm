@@ -7,8 +7,9 @@ namespace ast
 {
   class NamedType : public Type
   {
+    const std::string name;
+
   public:
     NamedType(const std::string &name) : name(name) {}
-    const std::string name;
   };
 }

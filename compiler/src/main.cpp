@@ -1,5 +1,3 @@
-#include "Parser.h"
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -21,10 +19,10 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  auto module = Parser().parse(argv[1], readFile(argv[1]));
+  // auto module = Parser().parse(argv[1], readFile(argv[1]));
 
-  auto fn = (ast::FnDecl *)module->stmts.at(0);
-  std::cout << fn->name << std::endl;
+  // auto fn = (ast::FnDecl *)module->stmts.at(0);
+  // std::cout << fn->name << std::endl;
 
-  delete module;
+  // delete module;
 }

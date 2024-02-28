@@ -2,18 +2,17 @@
 
 #include "AST/Base.h"
 #include <string>
+#include <memory>
 
 namespace ast
 {
   class UnaryExpr : public Expr
   {
-  public:
-    UnaryExpr(const std::string &op, const Expr *expr)
-        : op(op), expr(expr) {}
-
-    ~UnaryExpr() { delete expr; }
-
     const std::string op;
-    const Expr *expr;
+    const std::unique_ptr<Expr> expr;
+
+  public:
+    UnaryExpr(const std::string &op, std::unique_ptr<Expr> &expr)
+        : op(op), expr(std::move(expr)) {}
   };
 }

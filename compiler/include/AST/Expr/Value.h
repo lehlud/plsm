@@ -7,15 +7,17 @@ namespace ast
 {
   class IntValue : public Expr
   {
+    const int64_t value;
+
   public:
     IntValue(int64_t value) : value(value) {}
-    const int64_t value;
   };
 
   class FloatValue : public Expr
   {
+    const double value;
+
   public:
     FloatValue(double value) : value(value) {}
-    const double value;
   };
 }

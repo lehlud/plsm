@@ -2,20 +2,16 @@
 
 #include "AST/Def.h"
 #include <vector>
+#include <memory>
 
 namespace ast
 {
   class TupleType : public Type
   {
+    const std::vector<std::unique_ptr<Type>> types;
+
   public:
-    TupleType(const std::vector<Type *> &types) : types(std::move(types)) {}
-
-    ~TupleType()
-    {
-      for (auto &type : types)
-        delete type;
-    }
-
-    const std::vector<Type *> types;
+    TupleType(std::vector<std::unique_ptr<Type>> &types)
+        : types(std::move(types)) {}
   };
 }

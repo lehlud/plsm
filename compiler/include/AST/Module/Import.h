@@ -7,8 +7,9 @@ namespace ast
 {
   class Import : public ASTNode
   {
+    const std::string moduleName;
+
   public:
     Import(const std::string &moduleName) : moduleName(moduleName) {}
-    const std::string moduleName;
   };
 }

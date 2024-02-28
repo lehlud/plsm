@@ -1,18 +1,18 @@
 #pragma once
 
 #include <string>
+#include <stdexcept>
 
 #include "AST/Def.h"
-#include "parser.gen.h"
+#include "plsmLexer.h"
+#include "plsmParser.h"
 
-class Parser
+namespace plsm
 {
-public:
-  Parser() {}
+  std::unique_ptr<ast::Module> parse(const std::string &input);
+}
 
-  ast::Module *parse(const std::string &file, const std::stringstream &input);
-
-  std::string file;
-  yy::location location;
-  ast::Module *module;
-};
+namespace adscript
+{
+  std::unique_ptr<ast::Module> parse(const std::string &input);
+}
