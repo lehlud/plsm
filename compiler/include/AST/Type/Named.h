@@ -10,6 +10,7 @@ namespace ast
     const std::string name;
 
   public:
-    NamedType(const std::string &name) : name(name) {}
+    NamedType(LOC_ARG, const std::string &name)
+        : Type(location), name(name) {}
   };
 }

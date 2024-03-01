@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.25)
 
 project(plasmatum)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 set(CMAKE_CXX_STANDARD 23)
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)

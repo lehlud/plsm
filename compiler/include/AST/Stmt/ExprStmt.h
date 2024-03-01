@@ -10,6 +10,7 @@ namespace ast
     const std::unique_ptr<Expr> expr;
 
   public:
-    ExprStmt(std::unique_ptr<Expr> &expr) : expr(std::move(expr)) {}
+    ExprStmt(LOC_ARG, std::unique_ptr<Expr> &expr)
+        : Stmt(location), expr(std::move(expr)) {}
   };
 }

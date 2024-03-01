@@ -6,3 +6,6 @@
 # antlr-generated files
 plsm*.h
 plsm*.cpp
+
+# coredumps
+vgcore.*

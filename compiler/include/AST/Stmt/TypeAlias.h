@@ -13,7 +13,7 @@ namespace ast
     const std::unique_ptr<Type> type;
 
   public:
-    TypeAlias(const std::string &alias, std::unique_ptr<Type> &type)
-        : alias(alias), type(std::move(type)) {}
+    TypeAlias(LOC_ARG, const std::string &alias, std::unique_ptr<Type> &type)
+        : Stmt(location), alias(alias), type(std::move(type)) {}
   };
 }

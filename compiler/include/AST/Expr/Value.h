@@ -5,12 +5,19 @@
 
 namespace ast
 {
+  class NullValue : public Expr
+  {
+  public:
+    NullValue(LOC_ARG) : Expr(location) {}
+  };
+
   class IntValue : public Expr
   {
     const int64_t value;
 
   public:
-    IntValue(int64_t value) : value(value) {}
+    IntValue(LOC_ARG, int64_t value)
+        : Expr(location), value(value) {}
   };
 
   class FloatValue : public Expr
@@ -18,6 +25,7 @@ namespace ast
     const double value;
 
   public:
-    FloatValue(double value) : value(value) {}
+    FloatValue(LOC_ARG, double value)
+        : Expr(location), value(value) {}
   };
 }

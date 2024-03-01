@@ -12,7 +12,7 @@ namespace ast
     const std::unique_ptr<Expr> expr;
 
   public:
-    UnaryExpr(const std::string &op, std::unique_ptr<Expr> &expr)
-        : op(op), expr(std::move(expr)) {}
+    UnaryExpr(LOC_ARG, const std::string &op, std::unique_ptr<Expr> &expr)
+        : Expr(location), op(op), expr(std::move(expr)) {}
   };
 }

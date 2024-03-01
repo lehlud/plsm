@@ -13,7 +13,26 @@ namespace ast
     const std::unique_ptr<Expr> body;
 
   public:
-    Closure(std::vector<std::string> &args, std::unique_ptr<Expr> &body)
-        : args(std::move(args)), body(std::move(body)) {}
+    Closure(LOC_ARG, std::vector<std::string> &args, std::unique_ptr<Expr> &body)
+        : Expr(location), args(std::move(args)), body(std::move(body)) {}
+
+    virtual std::string str()
+    {
+      std::stringstream ss;
+
+      ss << "CallExpr(";
+      ss << "args=[";
+      for (size_t i = 0; i < args.size(); i++)
+      {
+        ss << args[i];
+        if (i != args.size() - 1)
+          ss << ", ";
+      }
+      ss << "], ";
+      ss << "body=" << body->str();
+      ss << ")";
+
+      return ss.str();
+    }
   };
 }

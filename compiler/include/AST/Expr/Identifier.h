@@ -10,6 +10,12 @@ namespace ast
     const std::string name;
 
   public:
-    Identifier(const std::string &name) : name(name) {}
+    Identifier(LOC_ARG, const std::string &name)
+        : Expr(location), name(name) {}
+
+    virtual std::string str()
+    {
+      return "Identifier(" + name + ")";
+    }
   };
 }

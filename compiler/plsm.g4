@@ -1,9 +1,10 @@
 grammar plsm;
 
-module: moduleImport* (let | fnDecl | fnDef | traitDef | typeDef)*;
+module: MODULE identifier ';' moduleImport* moduleStmt*;
 
-moduleImport: IMPORT moduleName ';';
-moduleName: identifier ('.' identifier)*;
+moduleImport: IMPORT importName ';';
+importName: identifier ('/' identifier)*;
+moduleStmt: let | fnDecl | fnDef | traitDef | typeDef;
 
 traitDef: TRAIT identifier '=' identifier ';'
         | TRAIT identifier '=' '{' (fnDecl)* '}' ';';
@@ -21,44 +22,46 @@ let: LET identifier type? '=' expr ';';
 
 exprStmt: expr ';';
 
-type: type2;
-type2: type1
+type: type1; // novisit
+type1: type0
      | '(' type ')'
      | '(' tupleTypeList ')'          // tuple
      | '[' typeList? ']' '->' type;   // closure
-type1: type0
-     | type0 '{' typeList '}';        // generic
-type0: identifier;
+type0: identifier
+     | identifier '{' typeList '}';   // generic
 
-tupleTypeList: type ',' type (',' type)*;
+tupleTypeList: type (',' type)+;
 typeList: type (',' type)*;
 
 
-expr: expr3;
+expr: expr3; // novisit
 expr3: expr2
      | '[' identifierList? ']' '->' expr     // closure
-     | '{' (let | exprStmt | fnDef)* (expr ';') '}';
+     | '{' blockStmt* (expr ';') '}';
 expr2: expr1
-     | expr2 operator expr1;                 // binary expr
+     | expr2 operator expr1;        // binary expr
 expr1: expr0
-     | operator expr0;                       // unary expr
+     | operator expr0;              // unary expr
 expr0: literal
      | identifier
-     | expr0 '[' exprList? ']'               // fn call
+     | expr0 '[' exprList? ']'      // fn call
      | '(' expr ')'
-     | expr0 '.' identifier;                 // property accessor
+     | '(' tupleExprList ')'        // tuple
+     | expr0 '.' identifier;        // property accessor
 
+blockStmt: let | exprStmt | fnDef;
+tupleExprList: expr (',' expr)+;
 exprList: expr (',' expr)*;
 
 identifierList: identifier (',' identifier)*;
 
-literal: 'null' | INT_LIT | FLOAT_LIT;
+literal: NULL='null' | INT_LIT | FLOAT_LIT;
 
 operator: '=' | '->'
         | OPERATOR;
 
 identifier: keyword | IDENTIFIER;
-keyword: BINOP | FN | IMPORT | LET | NATIVE | TRAIT | TYPE | UNOP;
+keyword: BINOP | FN | IMPORT | LET | MODULE | NATIVE | TRAIT | TYPE | UNOP;
 
 
 INT_LIT: [0-9]+ | '0x' [0-9a-fA-F]+ | '0o' [0-7]+ | '0b' [01]+;
@@ -70,9 +73,12 @@ BINOP: 'binop';
 FN: 'fn';
 IMPORT: 'import';
 LET: 'let';
+MODULE: 'module';
 NATIVE: 'native';
 TRAIT: 'trait';
 TYPE: 'type';
 UNOP: 'unop';
 
 IDENTIFIER: [a-zA-Z_] [a-zA-Z0-9_]*;
+
+WHITESPACE: [ \r\n\t]+ -> skip;

@@ -13,7 +13,7 @@ namespace ast
     const std::unique_ptr<Expr> value;
 
   public:
-    ValDecl(const std::string &name, std::unique_ptr<Type> &type, std::unique_ptr<Expr> &value)
-        : name(name), type(std::move(type)), value(std::move(value)) {}
+    ValDecl(LOC_ARG, const std::string &name, std::unique_ptr<Type> &type, std::unique_ptr<Expr> &value)
+        : Stmt(location), name(name), type(std::move(type)), value(std::move(value)) {}
   };
 }

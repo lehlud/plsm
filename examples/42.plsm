@@ -1,6 +1,8 @@
-import test.test;
+module test;
 
-fn main[] Int = 42;
+import lib/test;
+
+fn main[test (Int, Int)] Int = 42;
 
 fn test[b Int] Int = {
   fn helper[] Int = b;

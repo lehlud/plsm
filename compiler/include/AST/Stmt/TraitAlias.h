@@ -13,7 +13,7 @@ namespace ast
     const std::string aliased;
 
   public:
-    TraitAlias(const std::string &alias, const std::string &aliased)
-        : alias(alias), aliased(aliased) {}
+    TraitAlias(LOC_ARG, const std::string &alias, const std::string &aliased)
+        : Stmt(location), alias(alias), aliased(aliased) {}
   };
 }

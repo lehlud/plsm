@@ -13,7 +13,7 @@ namespace ast
     const std::vector<std::unique_ptr<Type>> types;
 
   public:
-    GenericType(const std::string &name, std::vector<std::unique_ptr<Type>> &types)
-        : name(name), types(std::move(types)) {}
+    GenericType(LOC_ARG, const std::string &name, std::vector<std::unique_ptr<Type>> &types)
+        : Type(location), name(name), types(std::move(types)) {}
   };
 }

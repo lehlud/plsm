@@ -10,6 +10,7 @@ namespace ast
     const std::string moduleName;
 
   public:
-    Import(const std::string &moduleName) : moduleName(moduleName) {}
+    Import(LOC_ARG, const std::string &moduleName)
+        : ASTNode(location), moduleName(moduleName) {}
   };
 }

@@ -1,13 +1,17 @@
 #include <iostream>
 #include <fstream>
+#include <istream>
 #include <sstream>
 
-static std::stringstream readFile(const std::string &path)
+#include "Parser.h"
+
+static std::string readFile(const std::string &path)
 {
-  std::ifstream t(path);
-  std::stringstream buffer;
-  buffer << t.rdbuf();
-  return buffer;
+  std::ifstream f(path);
+  auto data = (std::stringstream() << f.rdbuf()).str();
+  f.close();
+
+  return data;
 }
 
 int main(int argc, char *argv[])
@@ -19,9 +23,23 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
+  auto input = readFile(argv[1]);
+
+  std::cout << input << std::endl;
+
+  try
+  {
+    auto module = plsm::parse(argv[1], input);
+  }
+  catch (std::runtime_error &err)
+  {
+    std::cerr << err.what() << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
   // auto module = Parser().parse(argv[1], readFile(argv[1]));
 
-  // auto fn = (ast::FnDecl *)module->stmts.at(0);
+  // auto fn = (ast::FnDef *)module->stmts.at(0);
   // std::cout << fn->name << std::endl;
 
   // delete module;

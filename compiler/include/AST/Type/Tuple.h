@@ -11,7 +11,7 @@ namespace ast
     const std::vector<std::unique_ptr<Type>> types;
 
   public:
-    TupleType(std::vector<std::unique_ptr<Type>> &types)
-        : types(std::move(types)) {}
+    TupleType(LOC_ARG, std::vector<std::unique_ptr<Type>> &types)
+        : Type(location), types(std::move(types)) {}
   };
 }

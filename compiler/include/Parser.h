@@ -9,10 +9,10 @@
 
 namespace plsm
 {
-  std::unique_ptr<ast::Module> parse(const std::string &input);
+  std::unique_ptr<ast::Module> parse(const std::string &file, const std::string &input);
 }
 
 namespace adscript
 {
-  std::unique_ptr<ast::Module> parse(const std::string &input);
+  std::unique_ptr<ast::Module> parse(const std::string &file, const std::string &input);
 }
