@@ -1,39 +1,25 @@
 #pragma once
 
 #include "AST/Base.h"
-#include <vector>
 #include <memory>
+#include <sstream>
+#include <vector>
 
-namespace ast
-{
-  class CallExpr : public Expr
-  {
-    const std::unique_ptr<Expr> callee;
-    const std::vector<std::unique_ptr<Expr>> args;
+namespace plsm {
+namespace ast {
 
-  public:
-    CallExpr(LOC_ARG, std::unique_ptr<Expr> &callee, std::vector<std::unique_ptr<Expr>> &args)
-        : Expr(location), callee(std::move(callee)), args(std::move(args)) {}
+class CallExpr : public Expr {
+  const std::unique_ptr<Expr> callee;
+  const std::vector<std::unique_ptr<Expr>> args;
 
-    virtual std::string str()
-    {
-      std::stringstream ss;
+public:
+  CallExpr(LOC_ARG, std::unique_ptr<Expr> &callee,
+           std::vector<std::unique_ptr<Expr>> &args)
+      : Expr(location), callee(std::move(callee)), args(std::move(args)) {}
 
-      ss << "CallExpr(";
-      ss << "callee=" << callee->str();
+  virtual boost::json::value toJson() override;
+  static std::unique_ptr<CallExpr> fromJson(boost::json::value json);
+};
 
-      ss << "args=[";
-      for (size_t i = 0; i < args.size(); i++)
-      {
-        ss << args[i]->str();
-        if (i != args.size() - 1)
-          ss << ", ";
-      }
-      ss << "]";
-
-      ss << ")";
-
-      return ss.str();
-    }
-  };
-}
+} // namespace ast
+} // namespace plsm

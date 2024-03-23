@@ -1,45 +1,38 @@
 #pragma once
 
 #include "AST/Base.h"
-#include <string>
+#include <iomanip>
 #include <memory>
+#include <sstream>
+#include <string>
 
-namespace ast
-{
-  class BinExpr : public Expr
-  {
-    const std::string op;
-    const std::unique_ptr<Expr> left, right;
+namespace plsm {
+namespace ast {
 
-  public:
-    BinExpr(LOC_ARG, std::unique_ptr<Expr> &left, const std::string &op, std::unique_ptr<Expr> &right)
-        : Expr(location), left(std::move(left)), op(op), right(std::move(right)) {}
+class BinExpr : public Expr {
+  const std::string op;
+  const std::unique_ptr<Expr> left, right;
 
-    virtual std::string str(size_t indent, size_t tabstop)
-    {
-      return (std::stringstream() << "BinExpr("
-                                  << "op=\"" << op << "\", "
-                                  << "left=" << left->str() << ", "
-                                  << "right=" << right->str()
-                                  << ")")
-          .str();
-    }
-  };
+public:
+  BinExpr(LOC_ARG, std::unique_ptr<Expr> &left, const std::string &op,
+          std::unique_ptr<Expr> &right)
+      : Expr(location), left(std::move(left)), op(op), right(std::move(right)) {
+  }
 
-  class PrefExpr : public Expr
-  {
-    const std::unique_ptr<Expr> expr;
+  virtual boost::json::value toJson() override;
+  static std::unique_ptr<BinExpr> fromJson(boost::json::value json);
+};
 
-  public:
-    PrefExpr(LOC_ARG, std::unique_ptr<Expr> &expr)
-        : Expr(location), expr(std::move(expr)) {}
+class PrefExpr : public Expr {
+  const std::unique_ptr<Expr> expr;
 
-    virtual std::string str()
-    {
-      return (std::stringstream() << "PrefExpr("
-                                  << "expr=" << expr->str()
-                                  << ")")
-          .str();
-    }
-  };
-}
+public:
+  PrefExpr(LOC_ARG, std::unique_ptr<Expr> &expr)
+      : Expr(location), expr(std::move(expr)) {}
+
+  virtual boost::json::value toJson() override;
+  static std::unique_ptr<PrefExpr> fromJson(boost::json::value json);
+};
+
+} // namespace ast
+} // namespace plsm

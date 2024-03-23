@@ -1,38 +1,25 @@
 #pragma once
 
 #include "AST/Base.h"
-#include <vector>
 #include <memory>
+#include <sstream>
+#include <vector>
 
-namespace ast
-{
-  class BlockExpr : public Expr
-  {
-    const std::vector<std::unique_ptr<Stmt>> stmts;
-    const std::unique_ptr<Expr> result;
+namespace plsm {
+namespace ast {
 
-  public:
-    BlockExpr(LOC_ARG, std::vector<std::unique_ptr<Stmt>> &stmts, std::unique_ptr<Expr> &result)
-        : Expr(location), stmts(std::move(stmts)), result(std::move(result)) {}
+class BlockExpr : public Expr {
+  const std::vector<std::unique_ptr<Stmt>> stmts;
+  const std::unique_ptr<Expr> result;
 
-    virtual std::string str()
-    {
-      std::stringstream ss;
-      ss << "BlockExpr(";
+public:
+  BlockExpr(LOC_ARG, std::vector<std::unique_ptr<Stmt>> &stmts,
+            std::unique_ptr<Expr> &result)
+      : Expr(location), stmts(std::move(stmts)), result(std::move(result)) {}
 
-      ss << "stmts=[";
-      for (size_t i = 0; i < stmts.size(); i++)
-      {
-        ss << stmts[i]->str();
-        if (i != stmts.size() - 1)
-          ss << ", ";
-      }
-      ss << "], ";
+  virtual boost::json::value toJson() override;
+  static std::unique_ptr<BlockExpr> fromJson(boost::json::value json);
+};
 
-      ss << "result=" << result->str();
-      ss << ")";
-
-      return ss.str();
-    }
-  };
-}
+} // namespace ast
+} // namespace plsm

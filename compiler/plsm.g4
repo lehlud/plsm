@@ -36,7 +36,7 @@ typeList: type (',' type)*;
 
 expr: expr3; // novisit
 expr3: expr2
-     | '[' identifierList? ']' '->' expr     // closure
+     | '[' fnDefArgs? ']' '->' expr     // closure
      | '{' blockStmt* (expr ';') '}';
 expr2: expr1
      | expr2 operator expr1;        // binary expr

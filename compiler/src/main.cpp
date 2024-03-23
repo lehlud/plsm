@@ -30,6 +30,11 @@ int main(int argc, char *argv[])
   try
   {
     auto module = plsm::parse(argv[1], input);
+    std::cout << module->toJsonString() << std::endl;
+
+    std::cout << "\n\n";
+
+    std::cout << plsm::ast::Module::fromJson(module->toJson())->toJson() << std::endl;
   }
   catch (std::runtime_error &err)
   {
