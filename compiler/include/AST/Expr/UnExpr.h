@@ -1,24 +1,31 @@
 #pragma once
 
 #include "AST/Base.h"
+#include <memory>
 #include <string>
 
 namespace plsm {
 namespace ast {
-class Identifier : public Expr {
-  const std::string name;
+enum UnOp {
+  NOT,
+  POS,
+  NEG,
+};
+
+class UnExpr : public Expr {
+  const UnOp op;
+  const std::shared_ptr<Expr> expr;
 
 public:
-  Identifier(LOC_ARG, const std::string &name)
-      : Expr(sourceRange), name(name) {}
+  UnExpr(LOC_ARG, const UnOp op, Expr *expr)
+      : Expr(sourceRange), op(op), expr(expr) {}
 
   virtual boost::json::value toJson() override;
-  static Identifier *fromJson(boost::json::value json);
+  static UnExpr *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {
     return visitor->visit(*this, param);
   }
 };
-
 } // namespace ast
 } // namespace plsm

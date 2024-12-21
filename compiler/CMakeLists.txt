@@ -17,7 +17,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(ExternalAntlr4Cpp)
 
 find_package( 
- Boost 1.84 REQUIRED 
+ Boost 1.83 REQUIRED 
  COMPONENTS json 
 )
 

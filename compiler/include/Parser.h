@@ -1,12 +1,11 @@
 #pragma once
 
-#include <string>
 #include <stdexcept>
+#include <string>
 
-#include "AST/Def.h"
+#include "AST/AST.h"
 
-namespace plsm
-{
-  std::unique_ptr<ast::Module> parse(const std::string &file, const std::string &input);
+namespace plsm {
+std::shared_ptr<ast::Module> parse(const std::string &file,
+                                   const std::string &input);
 }
-

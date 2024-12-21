@@ -18,7 +18,7 @@ endif()
 
 # Ensure that the include dir already exists at configure time (to avoid cmake erroring
 # on non-existent include dirs)
-file(MAKE_DIRECTORY "${ANTLR4_INCLUDE_DIRS}")
+file(MAKE_DIRECTORY ${ANTLR4_INCLUDE_DIRS})
 
 if(${CMAKE_GENERATOR} MATCHES "Visual Studio.*")
   set(ANTLR4_OUTPUT_DIR ${ANTLR4_ROOT}/runtime/Cpp/runtime/$(Configuration))

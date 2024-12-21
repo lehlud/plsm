@@ -1,19 +1,16 @@
-#include "AST/Def.h"
+#include "AST/AST.h"
 #include <memory>
 
 namespace plsm {
+namespace ast {
 
-boost::json::value ast::Import::toJson() {
-  return {
-      {"@type", "Import"},
-      {"moduleName", moduleName}
-  };
+boost::json::value Import::toJson() {
+  return {{"@type", "Import"}, {"moduleName", moduleName}};
+}
+Import *Import::fromJson(boost::json::value json) {
+  auto moduleName = getJsonValue<Import, std::string>(json, "moduleName");
+  return new Import(SourceRange::json(), moduleName);
 }
 
-std::unique_ptr<ast::Import>
-ast::Import::fromJson(boost::json::value json) {
-  auto moduleName = getJsonValue<ast::Import, std::string>(json, "moduleName");
-  return std::make_unique<ast::Import>(ast::Location::json(), moduleName);
-}
-
+} // namespace ast
 } // namespace plsm

@@ -1,37 +1,41 @@
-#include "AST/Expr/BinExpr.h"
-#include "AST/Base.h"
-#include "AST/Def.h"
+#include "AST/AST.h"
 #include <memory>
 
 namespace plsm {
+namespace ast {
 
-boost::json::value ast::BinExpr::toJson() {
+static const std::unordered_map<BinOp, std::string> binOpToString = {
+    {BinOp::ADD, "+"}, {BinOp::SUB, "-"}, {BinOp::MUL, "*"}, {BinOp::DIV, "/"},
+    {BinOp::MOD, "%"}, {BinOp::EQ, "=="}, {BinOp::NE, "!="}, {BinOp::LT, "<"},
+    {BinOp::LE, "<="}, {BinOp::GT, ">"},  {BinOp::GE, ">="}, {BinOp::AND, "&&"},
+    {BinOp::OR, "||"},
+};
+
+static const std::unordered_map<std::string, BinOp> stringToBinOp = {
+    {"+", BinOp::ADD}, {"-", BinOp::SUB}, {"*", BinOp::MUL}, {"/", BinOp::DIV},
+    {"%", BinOp::MOD}, {"==", BinOp::EQ}, {"!=", BinOp::NE}, {"<", BinOp::LT},
+    {"<=", BinOp::LE}, {">", BinOp::GT},  {">=", BinOp::GE}, {"&&", BinOp::AND},
+    {"||", BinOp::OR},
+};
+
+boost::json::value BinExpr::toJson() {
   return {
       {"@type", "BinExpr"},
-      {"op", op},
-      {"left", left->toJson()},
-      {"right", right->toJson()},
+      {"op", binOpToString.at(op)},
+      {"lhs", lhs->toJson()},
+      {"rhs", rhs->toJson()},
   };
 }
 
-std::unique_ptr<ast::BinExpr> ast::BinExpr::fromJson(boost::json::value json) {
-  auto op = getJsonValue<ast::BinExpr, std::string>(json, "op");
-  auto left = fromJsonProperty<ast::BinExpr, ast::Expr>(json, "left");
-  auto right = fromJsonProperty<ast::BinExpr, ast::Expr>(json, "right");
-  return std::make_unique<ast::BinExpr>(ast::Location::json(), left, op, right);
+BinExpr *BinExpr::fromJson(boost::json::value json) {
+  auto opString = getJsonValue<BinExpr, std::string>(json, "op");
+  auto op = stringToBinOp.at(opString);
+
+  auto lhs = fromJsonProperty<BinExpr, Expr>(json, "lhs");
+  auto rhs = fromJsonProperty<BinExpr, Expr>(json, "rhs");
+
+  return new BinExpr(SourceRange::json(), op, lhs, rhs);
 }
 
-boost::json::value ast::PrefExpr::toJson() {
-  return {
-      {"@type", "PrefExpr"},
-      {"expr", expr->toJson()},
-  };
-}
-
-std::unique_ptr<ast::PrefExpr>
-ast::PrefExpr::fromJson(boost::json::value json) {
-  auto expr = fromJsonProperty<ast::PrefExpr, ast::Expr>(json, "expr");
-  return std::make_unique<ast::PrefExpr>(ast::Location::json(), expr);
-}
-
+} // namespace ast
 } // namespace plsm

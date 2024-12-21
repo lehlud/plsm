@@ -1,7 +1,7 @@
 {
   "C_Cpp.default.includePath": [
     "${workspaceFolder}/include/",
-    "/usr/include/antlr4-runtime",
+    "${workspaceFolder}/build/antlr4_runtime/src/antlr4_runtime/runtime/Cpp/runtime/src",
   ],
   "files.associations": {
     "*.embeddedhtml": "html",
@@ -77,6 +77,8 @@
     "typeinfo": "cpp",
     "valarray": "cpp",
     "variant": "cpp",
-    "*.inc": "cpp"
+    "*.inc": "cpp",
+    "source_location": "cpp",
+    "text_encoding": "cpp"
   }
 }

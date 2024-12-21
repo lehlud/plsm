@@ -1,38 +1,47 @@
 #pragma once
 
 #include "AST/Base.h"
-#include <string>
-#include <cstdint>
 #include <cfloat>
+#include <cstdint>
+#include <string>
 
 namespace plsm {
 namespace ast {
-class NullValue : public Expr {
-public:
-  NullValue(LOC_ARG) : Expr(location) {}
+// class NullValue : public Expr {
+// public:
+//   NullValue(LOC_ARG) : Expr(sourceRange) {}
 
-  virtual boost::json::value toJson() override;
-  static std::unique_ptr<NullValue> fromJson(boost::json::value json);
-};
+//   virtual boost::json::value toJson() override;
+//   static std::unique_ptr<NullValue> fromJson(boost::json::value json);
+// };
 
 class IntValue : public Expr {
   const std::int64_t value;
 
 public:
-  IntValue(LOC_ARG, int64_t value) : Expr(location), value(value) {}
+  IntValue(LOC_ARG, int64_t value) : Expr(sourceRange), value(value) {}
 
   virtual boost::json::value toJson() override;
-  static std::unique_ptr<IntValue> fromJson(boost::json::value json);
+  static IntValue *fromJson(boost::json::value json);
+
+  virtual std::any accept(ASTVisitor *visitor, std::any param) override {
+    return visitor->visit(*this, param);
+  }
 };
 
 class FloatValue : public Expr {
   const std::double_t value;
 
 public:
-  FloatValue(LOC_ARG, double value) : Expr(location), value(value) {}
+  FloatValue(LOC_ARG, double value) : Expr(sourceRange), value(value) {}
 
   virtual boost::json::value toJson() override;
-  static std::unique_ptr<FloatValue> fromJson(boost::json::value json);
+  static FloatValue *fromJson(boost::json::value json);
+
+  virtual std::any accept(ASTVisitor *visitor, std::any param) override {
+    return visitor->visit(*this, param);
+  }
 };
+
 } // namespace ast
 } // namespace plsm

@@ -1,9 +1,10 @@
-#include "AST/Def.h"
+#include "AST/AST.h"
 #include "Utils.h"
 
 namespace plsm {
+namespace ast {
 
-boost::json::value ast::Module::toJson() {
+boost::json::value Module::toJson() {
   return {
       {"@type", "Module"},
       {"name", name},
@@ -12,11 +13,13 @@ boost::json::value ast::Module::toJson() {
   };
 }
 
-std::unique_ptr<ast::Module> ast::Module::fromJson(boost::json::value json) {
-  auto name = getJsonValue<ast::Module, std::string>(json, "name");
-  auto imports = fromJsonVector<ast::Module, ast::Import>(json, "imports");
-  auto stmts = fromJsonVector<ast::Module, ast::Stmt>(json, "stmts");
-  return std::make_unique<ast::Module>(ast::Location::json(), name, imports, stmts);
+Module *Module::fromJson(boost::json::value json) {
+  auto name = getJsonValue<Module, std::string>(json, "name");
+  auto imports = fromJsonVector<Module, Import>(json, "imports");
+  auto stmts = fromJsonVector<Module, Stmt>(json, "stmts");
+
+  return new Module(SourceRange::json(), name, imports, stmts);
 }
 
+} // namespace ast
 } // namespace plsm

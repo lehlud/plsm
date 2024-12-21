@@ -1,37 +1,44 @@
 #pragma once
 
 #include "AST/Base.h"
-#include <iomanip>
 #include <memory>
-#include <sstream>
 #include <string>
 
 namespace plsm {
 namespace ast {
 
-class BinExpr : public Expr {
-  const std::string op;
-  const std::unique_ptr<Expr> left, right;
+enum BinOp {
+  ADD,
+  SUB,
+  MUL,
+  DIV,
+  MOD,
 
-public:
-  BinExpr(LOC_ARG, std::unique_ptr<Expr> &left, const std::string &op,
-          std::unique_ptr<Expr> &right)
-      : Expr(location), left(std::move(left)), op(op), right(std::move(right)) {
-  }
+  EQ,
+  NE,
+  GT,
+  GE,
+  LT,
+  LE,
 
-  virtual boost::json::value toJson() override;
-  static std::unique_ptr<BinExpr> fromJson(boost::json::value json);
+  AND,
+  OR,
 };
 
-class PrefExpr : public Expr {
-  const std::unique_ptr<Expr> expr;
+class BinExpr : public Expr {
+  const BinOp op;
+  const std::shared_ptr<Expr> lhs, rhs;
 
 public:
-  PrefExpr(LOC_ARG, std::unique_ptr<Expr> &expr)
-      : Expr(location), expr(std::move(expr)) {}
+  BinExpr(LOC_ARG, const BinOp op, Expr *lhs, Expr *rhs)
+      : Expr(sourceRange), op(op), lhs(lhs), rhs(rhs) {}
 
   virtual boost::json::value toJson() override;
-  static std::unique_ptr<PrefExpr> fromJson(boost::json::value json);
+  static BinExpr *fromJson(boost::json::value json);
+
+  virtual std::any accept(ASTVisitor *visitor, std::any param) override {
+    return visitor->visit(*this, param);
+  }
 };
 
 } // namespace ast

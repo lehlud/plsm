@@ -1,19 +1,19 @@
-#include "AST/Def.h"
-#include "AST/Expr/Identifier.h"
+#include "AST/AST.h"
 
 namespace plsm {
+namespace ast {
 
-boost::json::value ast::Identifier::toJson() {
+boost::json::value Identifier::toJson() {
   return {
       {"@type", "Identifier"},
       {"name", name},
   };
 }
 
-std::unique_ptr<ast::Identifier>
-ast::Identifier::fromJson(boost::json::value json) {
-  auto name = getJsonValue<ast::Identifier, std::string>(json, "name");
-  return std::make_unique<ast::Identifier>(ast::Location::json(), name);
+Identifier *Identifier::fromJson(boost::json::value json) {
+  auto name = getJsonValue<Identifier, std::string>(json, "name");
+  return new Identifier(SourceRange::json(), name);
 }
 
+} // namespace ast
 } // namespace plsm
