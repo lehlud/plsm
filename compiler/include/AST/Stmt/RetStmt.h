@@ -6,9 +6,9 @@
 namespace plsm {
 namespace ast {
 class RetStmt : public Stmt {
+public:
   const std::shared_ptr<Expr> value;
 
-public:
   RetStmt(LOC_ARG, Expr *value) : Stmt(sourceRange), value(value) {}
 
   virtual boost::json::value toJson() override;

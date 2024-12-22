@@ -9,11 +9,11 @@ namespace ast {
 class Import;
 
 class Module : public ASTNode {
+public:
   const std::string name;
   std::vector<std::shared_ptr<Import>> imports;
   std::vector<std::shared_ptr<Stmt>> stmts;
 
-public:
   Module(LOC_ARG, const std::string &name, const std::vector<Import *> &imports,
          const std::vector<Stmt *> &stmts)
       : ASTNode(sourceRange), name(name), imports(), stmts() {

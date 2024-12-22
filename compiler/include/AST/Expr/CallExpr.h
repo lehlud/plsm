@@ -8,10 +8,10 @@ namespace plsm {
 namespace ast {
 
 class CallExpr : public Expr {
+public:
   const std::shared_ptr<Expr> callee;
   std::vector<std::shared_ptr<Expr>> args;
 
-public:
   CallExpr(LOC_ARG, Expr *callee, std::vector<Expr *> args)
       : Expr(sourceRange), callee(callee), args() {
     for (auto &arg : args) {

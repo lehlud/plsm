@@ -6,9 +6,9 @@
 namespace plsm {
 namespace ast {
 class Import : public ASTNode {
+public:
   const std::string moduleName;
 
-public:
   Import(LOC_ARG, const std::string &moduleName)
       : ASTNode(sourceRange), moduleName(moduleName) {}
 

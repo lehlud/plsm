@@ -7,10 +7,10 @@
 namespace plsm {
 namespace ast {
 class WhileStmt : public Stmt {
+public:
   const std::shared_ptr<Expr> condition;
   std::vector<std::shared_ptr<Stmt>> body;
 
-public:
   WhileStmt(LOC_ARG, Expr *condition, const std::vector<Stmt *> &body)
       : Stmt(sourceRange), condition(condition) {
     for (auto &stmt : body) {

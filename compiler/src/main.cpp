@@ -3,6 +3,7 @@
 #include <istream>
 #include <sstream>
 
+#include "Analysis.h"
 #include "Parser.h"
 
 static std::string readFile(const std::string &path) {
@@ -27,6 +28,8 @@ int main(int argc, char *argv[]) {
   try {
     auto module = plsm::parse(argv[1], input);
     std::cout << module->toJsonString() << std::endl;
+
+    plsm::performNameAnalysis(module);
 
     // std::cout << "\n\n";
 

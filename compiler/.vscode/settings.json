@@ -79,6 +79,7 @@
     "variant": "cpp",
     "*.inc": "cpp",
     "source_location": "cpp",
-    "text_encoding": "cpp"
+    "text_encoding": "cpp",
+    "stack": "cpp"
   }
 }

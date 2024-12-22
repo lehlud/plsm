@@ -6,9 +6,9 @@ namespace plsm {
 namespace ast {
 
 class PrimitiveTypeName : public TypeName {
+public:
   const std::string name;
 
-public:
   PrimitiveTypeName(LOC_ARG, const std::string &name)
       : TypeName(sourceRange), name(name) {}
 

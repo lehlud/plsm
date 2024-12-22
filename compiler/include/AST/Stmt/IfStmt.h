@@ -8,10 +8,10 @@ namespace plsm {
 namespace ast {
 
 class IfStmt : public Stmt {
+public:
   const std::shared_ptr<Expr> condition;
   std::vector<std::shared_ptr<Stmt>> ifBody, elseBody;
 
-public:
   IfStmt(LOC_ARG, Expr *condition, const std::vector<Stmt *> &ifBody,
          const std::vector<Stmt *> &elseBody)
       : Stmt(sourceRange), condition(condition) {

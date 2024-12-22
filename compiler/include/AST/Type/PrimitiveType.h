@@ -6,9 +6,9 @@ namespace plsm {
 namespace ast {
 
 class PrimitiveType : public Type {
+public:
   const std::string name;
 
-public:
   PrimitiveType(const std::string &name) : Type(), name(name) {}
 
   bool operator==(const PrimitiveType &other) { return name == other.name; }

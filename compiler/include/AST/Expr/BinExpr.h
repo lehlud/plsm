@@ -26,10 +26,10 @@ enum BinOp {
 };
 
 class BinExpr : public Expr {
+public:
   const BinOp op;
   const std::shared_ptr<Expr> lhs, rhs;
 
-public:
   BinExpr(LOC_ARG, const BinOp op, Expr *lhs, Expr *rhs)
       : Expr(sourceRange), op(op), lhs(lhs), rhs(rhs) {}
 

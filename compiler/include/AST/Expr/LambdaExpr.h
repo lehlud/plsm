@@ -10,10 +10,10 @@ namespace ast {
 class FnParam;
 
 class LambdaExpr : public Expr {
+public:
   std::vector<std::shared_ptr<FnParam>> params;
   std::vector<std::shared_ptr<Expr>> body;
 
-public:
   LambdaExpr(LOC_ARG, std::vector<FnParam *> params, std::vector<Expr *> body)
       : Expr(sourceRange), params(), body() {
     for (auto &param : params) {

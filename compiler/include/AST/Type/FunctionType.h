@@ -7,14 +7,14 @@
 namespace plsm {
 namespace ast {
 class FunctionType : public Type {
-  std::vector<std::unique_ptr<Type>> paramTypes;
-  const std::unique_ptr<Type> returnType;
-
 public:
+  std::vector<std::shared_ptr<Type>> paramTypes;
+  const std::shared_ptr<Type> returnType;
+
   FunctionType(const std::vector<Type *> &paramTypes, Type *returnType)
       : Type(), returnType(returnType) {
     for (auto &paramType : paramTypes) {
-      this->paramTypes.push_back(std::unique_ptr<Type>(paramType));
+      this->paramTypes.push_back(std::shared_ptr<Type>(paramType));
     }
   }
 

@@ -7,10 +7,10 @@ namespace plsm {
 namespace ast {
 
 class CastExpr : public Expr {
+public:
   const std::shared_ptr<Expr> value;
   const std::shared_ptr<TypeName> typeName;
 
-public:
   CastExpr(LOC_ARG, Expr *value, TypeName *typeName)
       : Expr(sourceRange), value(value), typeName(typeName) {}
 

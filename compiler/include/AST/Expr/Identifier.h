@@ -6,9 +6,11 @@
 namespace plsm {
 namespace ast {
 class Identifier : public Expr {
+public:
   const std::string name;
 
-public:
+  std::shared_ptr<Symbol> symbol;
+
   Identifier(LOC_ARG, const std::string &name)
       : Expr(sourceRange), name(name) {}
 

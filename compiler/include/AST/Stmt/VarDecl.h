@@ -8,10 +8,12 @@ namespace plsm {
 namespace ast {
 
 class VarDecl : public Stmt {
+public:
   const std::string name;
   const std::shared_ptr<TypeName> typeName;
 
-public:
+  std::shared_ptr<Symbol> symbol;
+
   VarDecl(LOC_ARG, const std::string &name, TypeName *typeName)
       : Stmt(sourceRange), name(name), typeName(typeName) {}
 

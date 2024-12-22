@@ -5,6 +5,7 @@
 #include "plsmLexer.h"
 #include "plsmParser.h"
 
+namespace {
 class MyAntlr4ErrorListener : public antlr4::BaseErrorListener {
   std::string file;
   std::string *error;
@@ -22,6 +23,7 @@ public:
     *error = ss.str();
   }
 };
+} // namespace
 
 namespace plsm {
 

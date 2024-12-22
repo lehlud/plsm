@@ -149,6 +149,23 @@ public:
   };
 };
 
+class Type : public Jsonable {
+public:
+  Type() : Jsonable() {}
+  virtual ~Type() = default;
+
+  static Type *fromJson(boost::json::value json);
+};
+
+class Symbol {
+  const std::string name;
+  std::shared_ptr<Type> type;
+
+public:
+  Symbol(const std::string &name) : name(name) {}
+  Symbol(const std::string &name, Type *type) : name(name), type(type) {}
+};
+
 class ASTNode : public Jsonable {
 public:
   ASTNode(LOC_ARG) : Jsonable(), sourceRange(sourceRange) {}
@@ -170,6 +187,8 @@ public:
 };
 
 class Expr : public ASTNode {
+  std::shared_ptr<Type> type;
+
 public:
   Expr(LOC_ARG) : ASTNode(sourceRange) {}
   virtual ~Expr() = default;
@@ -197,14 +216,6 @@ public:
   static TypeName *fromJson(boost::json::value json);
 
   virtual bool isTypeName() override { return true; }
-};
-
-class Type : public Jsonable {
-public:
-  Type() : Jsonable() {}
-  virtual ~Type() = default;
-
-  static Type *fromJson(boost::json::value json);
 };
 
 } // namespace ast

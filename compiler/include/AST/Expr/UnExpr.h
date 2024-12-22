@@ -13,10 +13,10 @@ enum UnOp {
 };
 
 class UnExpr : public Expr {
+public:
   const UnOp op;
   const std::shared_ptr<Expr> expr;
 
-public:
   UnExpr(LOC_ARG, const UnOp op, Expr *expr)
       : Expr(sourceRange), op(op), expr(expr) {}
 

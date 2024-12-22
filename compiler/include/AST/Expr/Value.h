@@ -16,9 +16,9 @@ namespace ast {
 // };
 
 class IntValue : public Expr {
+public:
   const std::int64_t value;
 
-public:
   IntValue(LOC_ARG, int64_t value) : Expr(sourceRange), value(value) {}
 
   virtual boost::json::value toJson() override;
@@ -30,9 +30,9 @@ public:
 };
 
 class FloatValue : public Expr {
+public:
   const std::double_t value;
 
-public:
   FloatValue(LOC_ARG, double value) : Expr(sourceRange), value(value) {}
 
   virtual boost::json::value toJson() override;

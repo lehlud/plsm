@@ -8,10 +8,10 @@ namespace plsm {
 namespace ast {
 
 class AssignStmt : public Stmt {
+public:
   const std::shared_ptr<Expr> lval;
   const std::shared_ptr<Expr> rval;
 
-public:
   AssignStmt(LOC_ARG, Expr *lval, Expr *rval)
       : Stmt(sourceRange), lval(lval), rval(rval) {}
 
