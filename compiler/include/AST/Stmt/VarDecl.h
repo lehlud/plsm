@@ -10,14 +10,14 @@ namespace ast {
 class VarDecl : public Stmt {
 public:
   const std::string name;
-  const std::shared_ptr<TypeName> typeName;
+  std::unique_ptr<TypeName> typeName;
 
   std::shared_ptr<Symbol> symbol;
 
-  VarDecl(LOC_ARG, const std::string &name, TypeName *typeName)
-      : Stmt(sourceRange), name(name), typeName(typeName) {}
+  VarDecl(LOC_ARG, const std::string &name, std::unique_ptr<TypeName> typeName)
+      : Stmt(sourceRange), name(name), typeName(std::move(typeName)) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static VarDecl *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

@@ -3,20 +3,20 @@
 
 namespace plsm {
 namespace ast {
-// boost::json::value NullValue::toJson() { return nullptr; }
+// boost::json::value NullValue::toJson() const { return nullptr; }
 
 // std::unique_ptr<NullValue>
 // NullValue::fromJson(boost::json::value json) {
 //   return std::make_unique<NullValue>(SourceRange::json());
 // }
 
-boost::json::value IntValue::toJson() { return value; }
+boost::json::value IntValue::toJson() const { return value; }
 
 IntValue *IntValue::fromJson(boost::json::value json) {
   return new IntValue(SourceRange::json(), json.as_int64());
 }
 
-boost::json::value FloatValue::toJson() { return value; }
+boost::json::value FloatValue::toJson() const { return value; }
 
 FloatValue *FloatValue::fromJson(boost::json::value json) {
   return new FloatValue(SourceRange::json(), json.as_double());

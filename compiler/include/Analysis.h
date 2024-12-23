@@ -4,6 +4,7 @@
 
 namespace plsm {
 
-void performNameAnalysis(std::shared_ptr<ast::Module> module);
+void performNameAnalysis(std::unique_ptr<ast::Module> &module);
+void performTypeAnalysis(std::unique_ptr<ast::Module> &module);
 
-}
+} // namespace plsm

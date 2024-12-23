@@ -4,7 +4,7 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value Import::toJson() {
+boost::json::value Import::toJson() const {
   return {{"@type", "Import"}, {"moduleName", moduleName}};
 }
 Import *Import::fromJson(boost::json::value json) {

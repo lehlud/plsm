@@ -57,8 +57,8 @@ ASTNode *ASTNode::fromJson(boost::json::value json) {
   if (type == "WhileStmt")
     return WhileStmt::fromJson(json);
 
-  if (type == "PrimitiveTypeName")
-    return PrimitiveTypeName::fromJson(json);
+  if (type == "NamedTypeName")
+    return NamedTypeName::fromJson(json);
 
   throw std::runtime_error("json conversion for '" + type +
                            "' not implemented");

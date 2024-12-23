@@ -3,14 +3,16 @@
 #include <any>
 #include <boost/json/serialize.hpp>
 #include <exception>
-#include <functional>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
 #include <boost/json.hpp>
+
+#include "Terminal.h"
 
 #define LOC_ARG const SourceRange &sourceRange
 
@@ -30,6 +32,7 @@ class Import;
 class Module;
 
 class AssignStmt;
+class Block;
 class ExprStmt;
 class FnParam;
 class FnDecl;
@@ -38,7 +41,7 @@ class RetStmt;
 class VarDecl;
 class WhileStmt;
 
-class PrimitiveTypeName;
+class NamedTypeName;
 
 class ASTVisitor {
 public:
@@ -57,6 +60,7 @@ public:
   virtual std::any visit(Module &module, std::any param) = 0;
 
   virtual std::any visit(AssignStmt &assignStmt, std::any param) = 0;
+  virtual std::any visit(Block &block, std::any param) = 0;
   virtual std::any visit(ExprStmt &exprStmt, std::any param) = 0;
   virtual std::any visit(FnParam &fnParam, std::any param) = 0;
   virtual std::any visit(FnDecl &fnDecl, std::any param) = 0;
@@ -65,8 +69,7 @@ public:
   virtual std::any visit(VarDecl &varDecl, std::any param) = 0;
   virtual std::any visit(WhileStmt &whileStmt, std::any param) = 0;
 
-  virtual std::any visit(PrimitiveTypeName &primitiveTypeName,
-                         std::any param) = 0;
+  virtual std::any visit(NamedTypeName &namedTypeName, std::any param) = 0;
 };
 
 } // namespace ast
@@ -79,7 +82,7 @@ class Jsonable {
 public:
   virtual ~Jsonable() = default;
 
-  virtual boost::json::value toJson() = 0;
+  virtual boost::json::value toJson() const = 0;
 
 protected:
   template <class CurrNode>
@@ -114,7 +117,8 @@ protected:
   template <class CurrNode, class SubNode>
   static inline auto fromJsonProperty(boost::json::value json,
                                       std::string property) {
-    return SubNode::fromJson(getJsonProperty<CurrNode>(json, property));
+    return std::unique_ptr<SubNode>(
+        SubNode::fromJson(getJsonProperty<CurrNode>(json, property)));
   }
 
   template <class CurrNode, class SubNode>
@@ -122,9 +126,9 @@ protected:
                                     std::string property) {
     auto arr = getJsonProperty<CurrNode>(json, property).as_array();
 
-    std::vector<SubNode *> result;
+    std::vector<std::unique_ptr<SubNode>> result;
     for (auto &el : arr) {
-      result.push_back(SubNode::fromJson(el));
+      result.push_back(std::unique_ptr<SubNode>(SubNode::fromJson(el)));
     }
 
     return result;
@@ -133,7 +137,7 @@ protected:
 
 class SourceRange {
 public:
-  SourceRange(const std::string &file, const std::string &text,
+  SourceRange(const std::string &file, std::string text,
               std::pair<size_t, size_t> start, std::pair<size_t, size_t> end)
       : file(file), text(text), start(start), end(end) {}
 
@@ -141,27 +145,34 @@ public:
   const std::pair<size_t, size_t> start, end;
 
   static SourceRange unknown() {
-    return SourceRange("<?>", "<?>", {-1, -1}, {-1, -1});
+    return SourceRange("<?>", "<?>", {0, 0}, {0, 0});
   };
 
   static SourceRange json() {
-    return SourceRange("<json>", "<?>", {-1, -1}, {-1, -1});
+    return SourceRange("<json>", "<json>", {0, 0}, {0, 0});
   };
 };
+
+class TypeName;
 
 class Type : public Jsonable {
 public:
   Type() : Jsonable() {}
   virtual ~Type() = default;
 
+  virtual TypeName *toTypeName() = 0;
+
+  virtual bool operator==(const Type &other) = 0;
+  virtual bool operator!=(const Type &other) { return !(*this == other); }
+
   static Type *fromJson(boost::json::value json);
 };
 
 class Symbol {
+public:
   const std::string name;
   std::shared_ptr<Type> type;
 
-public:
   Symbol(const std::string &name) : name(name) {}
   Symbol(const std::string &name, Type *type) : name(name), type(type) {}
 };
@@ -173,29 +184,40 @@ public:
 
   const SourceRange sourceRange;
 
-  virtual std::string toJsonString() {
+  virtual std::string toJsonString() const {
     return boost::json::serialize(toJson(), {});
   }
 
   static ASTNode *fromJson(boost::json::value json);
 
-  virtual bool isExpr() { return false; }
-  virtual bool isStmt() { return false; }
-  virtual bool isTypeName() { return false; }
+  virtual bool isExpr() const { return false; }
+  virtual bool isStmt() const { return false; }
+  virtual bool isTypeName() const { return false; }
+
+  virtual std::string error(const std::string &message) const {
+    std::stringstream ss;
+
+    ss << "In file " << sourceRange.file << ":" << sourceRange.start.first
+       << ":" << sourceRange.start.second + 1 << "\n"
+       << terminal::cyan << sourceRange.text << terminal::reset << "\n"
+       << terminal::red << message << terminal::reset;
+
+    return ss.str();
+  }
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) = 0;
 };
 
 class Expr : public ASTNode {
+public:
   std::shared_ptr<Type> type;
 
-public:
   Expr(LOC_ARG) : ASTNode(sourceRange) {}
   virtual ~Expr() = default;
 
   static Expr *fromJson(boost::json::value json);
 
-  virtual bool isExpr() override { return true; }
+  virtual bool isExpr() const override { return true; }
 };
 
 class Stmt : public ASTNode {
@@ -205,17 +227,19 @@ public:
 
   static Stmt *fromJson(boost::json::value json);
 
-  virtual bool isStmt() override { return true; }
+  virtual bool isStmt() const override { return true; }
 };
 
 class TypeName : public ASTNode {
 public:
+  std::shared_ptr<Type> type;
+
   TypeName(LOC_ARG) : ASTNode(sourceRange) {}
   virtual ~TypeName() = default;
 
   static TypeName *fromJson(boost::json::value json);
 
-  virtual bool isTypeName() override { return true; }
+  virtual bool isTypeName() const override { return true; }
 };
 
 } // namespace ast

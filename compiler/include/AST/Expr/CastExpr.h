@@ -1,20 +1,21 @@
 #pragma once
 
 #include "AST/Base.h"
-#include <string>
 
 namespace plsm {
 namespace ast {
 
 class CastExpr : public Expr {
 public:
-  const std::shared_ptr<Expr> value;
-  const std::shared_ptr<TypeName> typeName;
+  std::unique_ptr<Expr> value;
+  std::unique_ptr<TypeName> typeName;
 
-  CastExpr(LOC_ARG, Expr *value, TypeName *typeName)
-      : Expr(sourceRange), value(value), typeName(typeName) {}
+  CastExpr(LOC_ARG, std::unique_ptr<Expr> value,
+           std::unique_ptr<TypeName> typeName)
+      : Expr(sourceRange), value(std::move(value)),
+        typeName(std::move(typeName)) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static CastExpr *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

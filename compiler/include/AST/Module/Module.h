@@ -11,22 +11,16 @@ class Import;
 class Module : public ASTNode {
 public:
   const std::string name;
-  std::vector<std::shared_ptr<Import>> imports;
-  std::vector<std::shared_ptr<Stmt>> stmts;
+  std::vector<std::unique_ptr<Import>> imports;
+  std::vector<std::unique_ptr<Stmt>> stmts;
 
-  Module(LOC_ARG, const std::string &name, const std::vector<Import *> &imports,
-         const std::vector<Stmt *> &stmts)
-      : ASTNode(sourceRange), name(name), imports(), stmts() {
-    for (auto &import : imports) {
-      this->imports.push_back(std::shared_ptr<Import>(import));
-    }
+  Module(LOC_ARG, const std::string &name,
+         std::vector<std::unique_ptr<Import>> imports,
+         std::vector<std::unique_ptr<Stmt>> stmts)
+      : ASTNode(sourceRange), name(name), imports(std::move(imports)),
+        stmts(std::move(stmts)) {}
 
-    for (auto &stmt : stmts) {
-      this->stmts.push_back(std::shared_ptr<Stmt>(stmt));
-    }
-  }
-
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static Module *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

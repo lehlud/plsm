@@ -4,18 +4,19 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value WhileStmt::toJson() {
+boost::json::value WhileStmt::toJson() const {
   return {
       {"@type", "WhileStmt"},
       {"condition", condition->toJson()},
-      {"body", utils::mapToJson(body)},
+      {"body", body->toJson()},
   };
 }
 
 WhileStmt *WhileStmt::fromJson(boost::json::value json) {
   auto condition = fromJsonProperty<WhileStmt, Expr>(json, "condition");
-  auto body = fromJsonVector<WhileStmt, Stmt>(json, "body");
-  return new WhileStmt(SourceRange::json(), condition, body);
+  auto body = fromJsonProperty<WhileStmt, Block>(json, "body");
+  return new WhileStmt(SourceRange::json(), std::move(condition),
+                       std::move(body));
 }
 
 } // namespace ast

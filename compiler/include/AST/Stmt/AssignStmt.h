@@ -2,20 +2,19 @@
 
 #include "AST/Base.h"
 #include <memory>
-#include <string>
 
 namespace plsm {
 namespace ast {
 
 class AssignStmt : public Stmt {
 public:
-  const std::shared_ptr<Expr> lval;
-  const std::shared_ptr<Expr> rval;
+  std::unique_ptr<Expr> lval;
+  std::unique_ptr<Expr> rval;
 
-  AssignStmt(LOC_ARG, Expr *lval, Expr *rval)
-      : Stmt(sourceRange), lval(lval), rval(rval) {}
+  AssignStmt(LOC_ARG, std::unique_ptr<Expr> lval, std::unique_ptr<Expr> rval)
+      : Stmt(sourceRange), lval(std::move(lval)), rval(std::move(rval)) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static AssignStmt *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

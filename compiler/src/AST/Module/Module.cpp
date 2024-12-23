@@ -4,7 +4,7 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value Module::toJson() {
+boost::json::value Module::toJson() const {
   return {
       {"@type", "Module"},
       {"name", name},
@@ -18,7 +18,8 @@ Module *Module::fromJson(boost::json::value json) {
   auto imports = fromJsonVector<Module, Import>(json, "imports");
   auto stmts = fromJsonVector<Module, Stmt>(json, "stmts");
 
-  return new Module(SourceRange::json(), name, imports, stmts);
+  return new Module(SourceRange::json(), name, std::move(imports),
+                    std::move(stmts));
 }
 
 } // namespace ast

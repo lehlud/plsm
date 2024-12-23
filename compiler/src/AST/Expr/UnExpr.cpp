@@ -16,7 +16,7 @@ static const std::unordered_map<std::string, UnOp> stringToUnOp = {
     {"!", UnOp::NOT},
 };
 
-boost::json::value UnExpr::toJson() {
+boost::json::value UnExpr::toJson() const {
   return {
       {"@type", "UnExpr"},
       {"op", unOpToString.at(op)},
@@ -29,7 +29,7 @@ UnExpr *UnExpr::fromJson(boost::json::value json) {
   auto op = stringToUnOp.at(opString);
 
   auto expr = fromJsonProperty<UnExpr, Expr>(json, "expr");
-  return new UnExpr(SourceRange::json(), op, expr);
+  return new UnExpr(SourceRange::json(), op, std::move(expr));
 }
 
 } // namespace ast

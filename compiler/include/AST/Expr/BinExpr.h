@@ -2,7 +2,6 @@
 
 #include "AST/Base.h"
 #include <memory>
-#include <string>
 
 namespace plsm {
 namespace ast {
@@ -28,12 +27,17 @@ enum BinOp {
 class BinExpr : public Expr {
 public:
   const BinOp op;
-  const std::shared_ptr<Expr> lhs, rhs;
+  std::unique_ptr<Expr> lhs, rhs;
 
-  BinExpr(LOC_ARG, const BinOp op, Expr *lhs, Expr *rhs)
-      : Expr(sourceRange), op(op), lhs(lhs), rhs(rhs) {}
+  BinExpr(LOC_ARG, const BinOp op, std::unique_ptr<Expr> lhs,
+          std::unique_ptr<Expr> rhs)
+      : Expr(sourceRange), op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
-  virtual boost::json::value toJson() override;
+  BinExpr(LOC_ARG, const BinOp op, std::unique_ptr<Expr> &lhs,
+          std::unique_ptr<Expr> &rhs)
+      : Expr(sourceRange), op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+
+  virtual boost::json::value toJson() const override;
   static BinExpr *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

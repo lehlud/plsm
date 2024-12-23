@@ -2,7 +2,6 @@
 
 #include "AST/Base.h"
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace plsm {
@@ -11,21 +10,17 @@ class FnParam;
 
 class LambdaExpr : public Expr {
 public:
-  std::vector<std::shared_ptr<FnParam>> params;
-  std::vector<std::shared_ptr<Expr>> body;
+  std::vector<std::unique_ptr<FnParam>> params;
+  std::unique_ptr<TypeName> returnTypeName;
+  std::unique_ptr<Block> body;
 
-  LambdaExpr(LOC_ARG, std::vector<FnParam *> params, std::vector<Expr *> body)
-      : Expr(sourceRange), params(), body() {
-    for (auto &param : params) {
-      this->params.push_back(std::shared_ptr<FnParam>(param));
-    }
+  LambdaExpr(LOC_ARG, std::vector<std::unique_ptr<FnParam>> params,
+             std::unique_ptr<TypeName> returnTypeName,
+             std::unique_ptr<Block> body)
+      : Expr(sourceRange), params(std::move(params)),
+        returnTypeName(std::move(returnTypeName)), body(std::move(body)) {}
 
-    for (auto &expr : body) {
-      this->body.push_back(std::shared_ptr<Expr>(expr));
-    }
-  }
-
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static LambdaExpr *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

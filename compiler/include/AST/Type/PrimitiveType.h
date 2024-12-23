@@ -11,10 +11,17 @@ public:
 
   PrimitiveType(const std::string &name) : Type(), name(name) {}
 
-  bool operator==(const PrimitiveType &other) { return name == other.name; }
-  bool operator!=(const PrimitiveType &other) { return !(*this == other); }
+  virtual TypeName *toTypeName() override;
 
-  virtual boost::json::value toJson() override;
+  virtual bool operator==(const Type &other) override {
+    if (const PrimitiveType *pt = dynamic_cast<const PrimitiveType *>(&other)) {
+      return name == pt->name;
+    }
+
+    return false;
+  }
+
+  virtual boost::json::value toJson() const override;
   static PrimitiveType *fromJson(boost::json::value json);
 };
 

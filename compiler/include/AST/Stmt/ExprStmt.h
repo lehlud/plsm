@@ -7,11 +7,12 @@ namespace plsm {
 namespace ast {
 class ExprStmt : public Stmt {
 public:
-  const std::shared_ptr<Expr> expr;
+  std::unique_ptr<Expr> expr;
 
-  ExprStmt(LOC_ARG, Expr *expr) : Stmt(sourceRange), expr(expr) {}
+  ExprStmt(LOC_ARG, std::unique_ptr<Expr> expr)
+      : Stmt(sourceRange), expr(std::move(expr)) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static ExprStmt *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

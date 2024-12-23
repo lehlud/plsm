@@ -3,13 +3,13 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value PrimitiveTypeName::toJson() {
-  return {{"@type", "PrimitiveTypeName"}, {"name", name}};
+boost::json::value NamedTypeName::toJson() const {
+  return {{"@type", "NamedTypeName"}, {"name", name}};
 }
 
-PrimitiveTypeName *PrimitiveTypeName::fromJson(boost::json::value json) {
-  auto name = getJsonValue<PrimitiveTypeName, std::string>(json, "name");
-  return new PrimitiveTypeName(SourceRange::json(), name);
+NamedTypeName *NamedTypeName::fromJson(boost::json::value json) {
+  auto name = getJsonValue<NamedTypeName, std::string>(json, "name");
+  return new NamedTypeName(SourceRange::json(), name);
 }
 
 } // namespace ast

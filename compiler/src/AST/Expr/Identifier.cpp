@@ -3,7 +3,7 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value Identifier::toJson() {
+boost::json::value Identifier::toJson() const {
   return {
       {"@type", "Identifier"},
       {"name", name},

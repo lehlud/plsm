@@ -4,18 +4,22 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value LambdaExpr::toJson() {
+boost::json::value LambdaExpr::toJson() const {
   return {
       {"@type", "LambdaExpr"},
       {"params", utils::mapToJson(params)},
-      {"body", utils::mapToJson(body)},
+      {"returnTypeName", returnTypeName->toJson()},
+      {"body", body->toJson()},
   };
 }
 
 LambdaExpr *LambdaExpr::fromJson(boost::json::value json) {
   auto params = fromJsonVector<LambdaExpr, FnParam>(json, "params");
-  auto body = fromJsonVector<LambdaExpr, Expr>(json, "body");
-  return new LambdaExpr(SourceRange::json(), params, body);
+  auto returnTypeName =
+      fromJsonProperty<LambdaExpr, TypeName>(json, "returnTypeName");
+  auto body = fromJsonProperty<LambdaExpr, Block>(json, "body");
+  return new LambdaExpr(SourceRange::json(), std::move(params),
+                        std::move(returnTypeName), std::move(body));
 }
 
 } // namespace ast

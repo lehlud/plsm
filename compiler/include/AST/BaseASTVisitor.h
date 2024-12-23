@@ -10,24 +10,30 @@ public:
   BaseASTVisitor() : ASTVisitor() {};
 
   virtual std::any visit(BinExpr &binExpr, std::any param) override {
-    binExpr.lhs->accept(this, param);
-    binExpr.rhs->accept(this, param);
+    if (binExpr.lhs.get())
+      binExpr.lhs->accept(this, param);
+    if (binExpr.rhs.get())
+      binExpr.rhs->accept(this, param);
     return std::any();
   }
 
   virtual std::any visit(CallExpr &callExpr, std::any param) override {
-    callExpr.callee->accept(this, param);
+    if (callExpr.callee.get())
+      callExpr.callee->accept(this, param);
 
     for (auto &arg : callExpr.args) {
-      arg->accept(this, param);
+      if (arg.get())
+        arg->accept(this, param);
     }
 
     return std::any();
   }
 
   virtual std::any visit(CastExpr &castExpr, std::any param) override {
-    castExpr.value->accept(this, param);
-    castExpr.typeName->accept(this, param);
+    if (castExpr.value.get())
+      castExpr.value->accept(this, param);
+    if (castExpr.typeName.get())
+      castExpr.typeName->accept(this, param);
     return std::any();
   }
 
@@ -36,19 +42,23 @@ public:
   }
 
   virtual std::any visit(LambdaExpr &lambdaExpr, std::any param) override {
-    for (auto &param : lambdaExpr.params) {
-      param->accept(this, param);
+    if (lambdaExpr.returnTypeName.get())
+      lambdaExpr.returnTypeName->accept(this, param);
+
+    for (auto &p : lambdaExpr.params) {
+      if (p.get())
+        p->accept(this, param);
     }
 
-    for (auto &body : lambdaExpr.body) {
-      body->accept(this, param);
-    }
+    if (lambdaExpr.body.get())
+      lambdaExpr.body->accept(this, param);
 
     return std::any();
   }
 
   virtual std::any visit(UnExpr &unExpr, std::any param) override {
-    unExpr.expr->accept(this, param);
+    if (unExpr.expr.get())
+      unExpr.expr->accept(this, param);
     return std::any();
   }
 
@@ -70,75 +80,90 @@ public:
     }
 
     for (auto &stmt : module.stmts) {
-      stmt->accept(this, param);
+      if (stmt.get())
+        stmt->accept(this, param);
     }
 
     return std::any();
   }
 
   virtual std::any visit(AssignStmt &assignStmt, std::any param) override {
-    assignStmt.lval->accept(this, param);
-    assignStmt.rval->accept(this, param);
+    if (assignStmt.lval.get())
+      assignStmt.lval->accept(this, param);
+    if (assignStmt.rval.get())
+      assignStmt.rval->accept(this, param);
+    return std::any();
+  }
+
+  virtual std::any visit(Block &block, std::any param) override {
+    for (auto &stmt : block.stmts) {
+      if (stmt.get())
+        stmt->accept(this, param);
+    }
+
     return std::any();
   }
 
   virtual std::any visit(ExprStmt &exprStmt, std::any param) override {
-    exprStmt.expr->accept(this, param);
+    if (exprStmt.expr.get())
+      exprStmt.expr->accept(this, param);
     return std::any();
   }
 
   virtual std::any visit(FnParam &fnParam, std::any param) override {
-    fnParam.typeName->accept(this, param);
+    if (fnParam.typeName.get())
+      fnParam.typeName->accept(this, param);
     return std::any();
   }
 
   virtual std::any visit(FnDecl &fnDecl, std::any param) override {
-    for (auto &param : fnDecl.params) {
-      param->accept(this, param);
+    if (fnDecl.returnTypeName.get())
+      fnDecl.returnTypeName->accept(this, param);
+
+    for (auto &p : fnDecl.params) {
+      if (p.get())
+        p->accept(this, param);
     }
 
-    for (auto &body : fnDecl.body) {
-      body->accept(this, param);
-    }
+    if (fnDecl.body.get())
+      fnDecl.body->accept(this, param);
 
     return std::any();
   }
 
   virtual std::any visit(IfStmt &ifStmt, std::any param) override {
-    ifStmt.condition->accept(this, param);
-
-    for (auto &ifBody : ifStmt.ifBody) {
-      ifBody->accept(this, param);
-    }
-
-    for (auto &elseBody : ifStmt.elseBody) {
-      elseBody->accept(this, param);
-    }
+    if (ifStmt.condition.get())
+      ifStmt.condition->accept(this, param);
+    if (ifStmt.ifBody.get())
+      ifStmt.ifBody->accept(this, param);
+    if (ifStmt.elseBody.get())
+      ifStmt.elseBody->accept(this, param);
 
     return std::any();
   }
 
   virtual std::any visit(RetStmt &retStmt, std::any param) override {
-    retStmt.value->accept(this, param);
+    if (retStmt.value.get())
+      retStmt.value->accept(this, param);
     return std::any();
   }
 
   virtual std::any visit(VarDecl &varDecl, std::any param) override {
-    varDecl.typeName->accept(this, param);
+    if (varDecl.typeName.get())
+      varDecl.typeName->accept(this, param);
     return std::any();
   }
 
   virtual std::any visit(WhileStmt &whileStmt, std::any param) override {
-    whileStmt.condition->accept(this, param);
-
-    for (auto &body : whileStmt.body) {
-      body->accept(this, param);
-    }
+    if (whileStmt.condition.get())
+      whileStmt.condition->accept(this, param);
+    if (whileStmt.body.get())
+      whileStmt.body->accept(this, param);
 
     return std::any();
   }
 
-  virtual std::any visit(PrimitiveTypeName &primitiveTypeName,
+  virtual std::any visit(NamedTypeName &namedTypeName,
                          std::any param) override {
     return std::any();
   }

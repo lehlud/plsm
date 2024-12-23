@@ -14,7 +14,7 @@ public:
   Identifier(LOC_ARG, const std::string &name)
       : Expr(sourceRange), name(name) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static Identifier *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

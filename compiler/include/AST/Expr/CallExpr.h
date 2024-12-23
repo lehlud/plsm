@@ -9,17 +9,14 @@ namespace ast {
 
 class CallExpr : public Expr {
 public:
-  const std::shared_ptr<Expr> callee;
-  std::vector<std::shared_ptr<Expr>> args;
+  std::unique_ptr<Expr> callee;
+  std::vector<std::unique_ptr<Expr>> args;
 
-  CallExpr(LOC_ARG, Expr *callee, std::vector<Expr *> args)
-      : Expr(sourceRange), callee(callee), args() {
-    for (auto &arg : args) {
-      this->args.push_back(std::shared_ptr<Expr>(arg));
-    }
-  }
+  CallExpr(LOC_ARG, std::unique_ptr<Expr> callee,
+           std::vector<std::unique_ptr<Expr>> args)
+      : Expr(sourceRange), callee(std::move(callee)), args(std::move(args)) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static CallExpr *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

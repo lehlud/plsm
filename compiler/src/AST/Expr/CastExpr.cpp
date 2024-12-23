@@ -4,7 +4,7 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value CastExpr::toJson() {
+boost::json::value CastExpr::toJson() const {
   return {
       {"@type", "CastExpr"},
       {"value", value->toJson()},
@@ -15,7 +15,8 @@ boost::json::value CastExpr::toJson() {
 CastExpr *CastExpr::fromJson(boost::json::value json) {
   auto value = fromJsonProperty<CastExpr, Expr>(json, "value");
   auto typeName = fromJsonProperty<CastExpr, TypeName>(json, "typeName");
-  return new CastExpr(SourceRange::json(), value, typeName);
+  return new CastExpr(SourceRange::json(), std::move(value),
+                      std::move(typeName));
 }
 
 } // namespace ast

@@ -1,6 +1,8 @@
-fun main() i64 {
-  var asdf : int;
-  asdf = 100;
+var asdf : i64;
+
+fun main(arg0 i64) i8 {
+  var a : i64;
+  a = 10 + 2;
 
   if (asdf > 1000) {
     a = 1;
@@ -10,9 +12,5 @@ fun main() i64 {
     a = 3;
   }
 
-  while (a < 10) {
-    a = a + 1;
-  }
-
-  ret 3 * 10 + 21.0 * 2;
+  ret 100;
 }

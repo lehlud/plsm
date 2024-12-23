@@ -14,6 +14,7 @@
 #include "Module/Module.h"
 
 #include "Stmt/AssignStmt.h"
+#include "Stmt/Block.h"
 #include "Stmt/ExprStmt.h"
 #include "Stmt/FnDecl.h"
 #include "Stmt/IfStmt.h"
@@ -24,4 +25,4 @@
 #include "Type/FunctionType.h"
 #include "Type/PrimitiveType.h"
 
-#include "TypeName/PrimitiveTypeName.h"
+#include "TypeName/NamedTypeName.h"

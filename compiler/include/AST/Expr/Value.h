@@ -3,7 +3,6 @@
 #include "AST/Base.h"
 #include <cfloat>
 #include <cstdint>
-#include <string>
 
 namespace plsm {
 namespace ast {
@@ -11,7 +10,7 @@ namespace ast {
 // public:
 //   NullValue(LOC_ARG) : Expr(sourceRange) {}
 
-//   virtual boost::json::value toJson() override;
+//   virtual boost::json::value toJson() const override;
 //   static std::unique_ptr<NullValue> fromJson(boost::json::value json);
 // };
 
@@ -21,7 +20,7 @@ public:
 
   IntValue(LOC_ARG, int64_t value) : Expr(sourceRange), value(value) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static IntValue *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {
@@ -35,7 +34,7 @@ public:
 
   FloatValue(LOC_ARG, double value) : Expr(sourceRange), value(value) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static FloatValue *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

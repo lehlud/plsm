@@ -3,7 +3,7 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value VarDecl::toJson() {
+boost::json::value VarDecl::toJson() const {
   return {
       {"@type", "VarDecl"},
       {"name", name},
@@ -14,7 +14,7 @@ boost::json::value VarDecl::toJson() {
 VarDecl *VarDecl::fromJson(boost::json::value json) {
   auto name = getJsonValue<VarDecl, std::string>(json, "name");
   auto typeName = fromJsonProperty<VarDecl, TypeName>(json, "typeName");
-  return new VarDecl(SourceRange::json(), name, typeName);
+  return new VarDecl(SourceRange::json(), name, std::move(typeName));
 }
 
 } // namespace ast

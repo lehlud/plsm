@@ -2,7 +2,6 @@
 
 #include "AST/Base.h"
 #include <memory>
-#include <string>
 
 namespace plsm {
 namespace ast {
@@ -15,12 +14,12 @@ enum UnOp {
 class UnExpr : public Expr {
 public:
   const UnOp op;
-  const std::shared_ptr<Expr> expr;
+  std::unique_ptr<Expr> expr;
 
-  UnExpr(LOC_ARG, const UnOp op, Expr *expr)
-      : Expr(sourceRange), op(op), expr(expr) {}
+  UnExpr(LOC_ARG, const UnOp op, std::unique_ptr<Expr> expr)
+      : Expr(sourceRange), op(op), expr(std::move(expr)) {}
 
-  virtual boost::json::value toJson() override;
+  virtual boost::json::value toJson() const override;
   static UnExpr *fromJson(boost::json::value json);
 
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {

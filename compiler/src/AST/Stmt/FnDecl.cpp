@@ -4,7 +4,7 @@
 namespace plsm {
 namespace ast {
 
-boost::json::value FnParam::toJson() {
+boost::json::value FnParam::toJson() const {
   return {
       {"@type", "FnParam"},
       {"name", name},
@@ -15,16 +15,16 @@ boost::json::value FnParam::toJson() {
 FnParam *FnParam::fromJson(boost::json::value json) {
   auto name = getJsonValue<FnParam, std::string>(json, "name");
   auto typeName = fromJsonProperty<FnParam, TypeName>(json, "typeName");
-  return new FnParam(SourceRange::json(), name, typeName);
+  return new FnParam(SourceRange::json(), name, std::move(typeName));
 }
 
-boost::json::value FnDecl::toJson() {
+boost::json::value FnDecl::toJson() const {
   return {
       {"@type", "FnDecl"},
       {"name", name},
       {"params", utils::mapToJson(params)},
       {"returnTypeName", returnTypeName->toJson()},
-      {"body", utils::mapToJson(body)},
+      {"body", body->toJson()},
   };
 }
 
@@ -33,8 +33,9 @@ FnDecl *FnDecl::fromJson(boost::json::value json) {
   auto params = fromJsonVector<FnDecl, FnParam>(json, "params");
   auto returnTypeName =
       fromJsonProperty<FnDecl, TypeName>(json, "returnTypeName");
-  auto body = fromJsonVector<FnDecl, Stmt>(json, "body");
-  return new FnDecl(SourceRange::json(), name, params, returnTypeName, body);
+  auto body = fromJsonProperty<FnDecl, Block>(json, "body");
+  return new FnDecl(SourceRange::json(), name, std::move(params),
+                    std::move(returnTypeName), std::move(body));
 }
 
 } // namespace ast

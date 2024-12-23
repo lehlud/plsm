@@ -18,7 +18,7 @@ static const std::unordered_map<std::string, BinOp> stringToBinOp = {
     {"||", BinOp::OR},
 };
 
-boost::json::value BinExpr::toJson() {
+boost::json::value BinExpr::toJson() const {
   return {
       {"@type", "BinExpr"},
       {"op", binOpToString.at(op)},
@@ -34,7 +34,7 @@ BinExpr *BinExpr::fromJson(boost::json::value json) {
   auto lhs = fromJsonProperty<BinExpr, Expr>(json, "lhs");
   auto rhs = fromJsonProperty<BinExpr, Expr>(json, "rhs");
 
-  return new BinExpr(SourceRange::json(), op, lhs, rhs);
+  return new BinExpr(SourceRange::json(), op, std::move(lhs), std::move(rhs));
 }
 
 } // namespace ast

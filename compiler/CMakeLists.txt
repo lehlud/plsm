@@ -30,7 +30,7 @@ add_custom_command(PRE_BUILD
   OUTPUT ${ANTLR_INC}
   COMMENT "Generating plsm_parser"
   COMMAND java -jar
-    ${CMAKE_SOURCE_DIR}/thirdparty/antlr-4.13.1-complete.jar
+    ${CMAKE_SOURCE_DIR}/thirdparty/antlr4-4.13.2-complete.jar
     ${CMAKE_SOURCE_DIR}/plsm.g4
     -o ${GEN_DIR} -Dlanguage=Cpp -no-listener -visitor
   COMMAND ${CMAKE_COMMAND} -E copy ${GEN_DIR}/*.h ${INC_DIR}
