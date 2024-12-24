@@ -44,7 +44,9 @@ add_dependencies(plsm antlr4_static)
 target_include_directories(plsm PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(plsm PRIVATE ${ANTLR4_INCLUDE_DIRS})
 target_link_directories(plsm PRIVATE ${ANTLR4_OUTPUT_DIR})
-target_link_libraries(plsm PRIVATE antlr4-runtime Boost::json)
+target_link_directories(plsm PRIVATE /usr/lib64/llvm18/lib)
+target_include_directories(plsm PRIVATE /usr/lib64/llvm18/include)
+target_link_libraries(plsm PRIVATE antlr4-runtime Boost::json LLVM-18)
 
 add_custom_target(clean-all
   COMMAND ${CMAKE_COMMAND} -E rm -rf

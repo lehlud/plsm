@@ -18,6 +18,7 @@
 #include "Stmt/ExprStmt.h"
 #include "Stmt/FnDecl.h"
 #include "Stmt/IfStmt.h"
+#include "Stmt/InlineAsm.h"
 #include "Stmt/RetStmt.h"
 #include "Stmt/VarDecl.h"
 #include "Stmt/WhileStmt.h"

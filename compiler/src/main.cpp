@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "Analysis.h"
+#include "Compile.h"
 #include "Errors.h"
 #include "Parser.h"
 
@@ -30,10 +31,15 @@ int main(int argc, char *argv[]) {
 
   try {
     auto module = plsm::parse(argv[1], input);
-    // std::cout << module->toJsonString() << std::endl;
 
     plsm::performNameAnalysis(module);
     plsm::performTypeAnalysis(module);
+
+    // std::cout << module->toJsonString() << std::endl;
+
+    if (!plsm::errors::get().size()) {
+      plsm::compileModule(module, std::string(argv[1]));
+    }
 
     // std::cout << "\n\n";
 

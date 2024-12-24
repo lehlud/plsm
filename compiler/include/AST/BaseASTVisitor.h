@@ -142,6 +142,25 @@ public:
     return std::any();
   }
 
+  virtual std::any visit(InlineAsmConstraint &inlineAsmConstraint,
+                         std::any param) override {
+    return std::any();
+  }
+
+  virtual std::any visit(InlineAsm &inlineAsm, std::any param) override {
+    for (auto &c : inlineAsm.outputs) {
+      if (c.get())
+        c->accept(this, param);
+    }
+
+    for (auto &c : inlineAsm.inputs) {
+      if (c.get())
+        c->accept(this, param);
+    }
+
+    return std::any();
+  }
+
   virtual std::any visit(RetStmt &retStmt, std::any param) override {
     if (retStmt.value.get())
       retStmt.value->accept(this, param);

@@ -21,6 +21,12 @@ public:
     if (!fnDecl.name.size())
       return std::any();
 
+    if (scopes->back().count(fnDecl.name)) {
+      errors::put(
+          fnDecl.error("redeclaration of global symbol '" + fnDecl.name + "'"));
+      return std::any();
+    }
+
     auto symbol = std::make_shared<ast::Symbol>(fnDecl.name);
     fnDecl.symbol = symbol;
     scopes->back()[fnDecl.name] = symbol;
@@ -31,6 +37,12 @@ public:
   virtual std::any visit(ast::VarDecl &varDecl, std::any param) override {
     if (!varDecl.name.size())
       return std::any();
+
+    if (scopes->back().count(varDecl.name)) {
+      errors::put(varDecl.error("redeclaration of global symbol '" +
+                                varDecl.name + "'"));
+      return std::any();
+    }
 
     auto symbol = std::make_shared<ast::Symbol>(varDecl.name);
     varDecl.symbol = symbol;
@@ -137,9 +149,7 @@ void performNameAnalysis(std::unique_ptr<ast::Module> &module) {
   NameAnalysisVisitor1 visitor1(&scopes);
   NameAnalysisVisitor2 visitor2(&scopes);
 
-  for (auto &stmt : module->stmts) {
-    stmt->accept(&visitor1, nullptr);
-  }
+  module->accept(&visitor1, nullptr);
 
   for (auto &stmt : module->stmts) {
     if (utils::is<ast::FnDecl>(stmt.get()))

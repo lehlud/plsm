@@ -15,6 +15,13 @@ public:
   virtual boost::json::value toJson() const override;
   static Block *fromJson(boost::json::value json);
 
+  bool alywasReturns() const {
+    for (auto &stmt : stmts)
+      if (stmt.get() && stmt->alywasReturns())
+        return true;
+    return false;
+  }
+
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {
     return visitor->visit(*this, param);
   }

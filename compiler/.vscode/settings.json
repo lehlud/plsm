@@ -2,6 +2,7 @@
   "C_Cpp.default.includePath": [
     "${workspaceFolder}/include/",
     "${workspaceFolder}/build/antlr4_runtime/src/antlr4_runtime/runtime/Cpp/runtime/src",
+    "/usr/lib64/llvm18/include",
   ],
   "files.associations": {
     "*.embeddedhtml": "html",

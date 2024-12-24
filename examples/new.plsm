@@ -1,16 +1,22 @@
-var asdf : i64;
+fun addFirst(n : i32) i32 {
+  var result : i32;
+  result = 0;
 
-fun main(arg0 i64) i8 {
-  var a : i64;
-  a = 10 + 2;
-
-  if (asdf > 1000) {
-    a = 1;
-  } else if (asdf > 500) {
-    a = 2;
-  } else {
-    a = 3;
+  var i : i32;
+  i = 0;
+  while (i < n) {
+    result = result + i;
+    i = i + 1;
   }
 
-  ret 100;
+  ret result;
+}
+
+// fun f(n : i32) i32 {
+//   if (n < 2) ret n;
+//   ret f(n - 1);
+// }
+
+fun main(argc : i32) u8 {
+  ret addFirst(argc) as u8;
 }

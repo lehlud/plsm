@@ -65,6 +65,9 @@ public:
   virtual std::any visit(FnParam &fnParam, std::any param) = 0;
   virtual std::any visit(FnDecl &fnDecl, std::any param) = 0;
   virtual std::any visit(IfStmt &ifStmt, std::any param) = 0;
+  virtual std::any visit(InlineAsmConstraint &inlineAsmConstraint,
+                         std::any param) = 0;
+  virtual std::any visit(InlineAsm &inlineAsm, std::any param) = 0;
   virtual std::any visit(RetStmt &retStmt, std::any param) = 0;
   virtual std::any visit(VarDecl &varDecl, std::any param) = 0;
   virtual std::any visit(WhileStmt &whileStmt, std::any param) = 0;
@@ -226,6 +229,8 @@ public:
   virtual ~Stmt() = default;
 
   static Stmt *fromJson(boost::json::value json);
+
+  virtual bool alywasReturns() const = 0;
 
   virtual bool isStmt() const override { return true; }
 };

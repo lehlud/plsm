@@ -15,6 +15,8 @@ public:
   virtual boost::json::value toJson() const override;
   static RetStmt *fromJson(boost::json::value json);
 
+  virtual bool alywasReturns() const override { return true; }
+
   virtual std::any accept(ASTVisitor *visitor, std::any param) override {
     return visitor->visit(*this, param);
   }

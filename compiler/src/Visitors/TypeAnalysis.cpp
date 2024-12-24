@@ -21,10 +21,12 @@ static std::map<std::string, std::shared_ptr<PrimitiveType>> primitiveTypes = {
     {"i16", std::make_shared<PrimitiveType>("i16")},
     {"i32", std::make_shared<PrimitiveType>("i32")},
     {"i64", std::make_shared<PrimitiveType>("i64")},
+    {"i128", std::make_shared<PrimitiveType>("i128")},
     {"u8", std::make_shared<PrimitiveType>("u8")},
     {"u16", std::make_shared<PrimitiveType>("u16")},
     {"u32", std::make_shared<PrimitiveType>("u32")},
     {"u64", std::make_shared<PrimitiveType>("u64")},
+    {"u128", std::make_shared<PrimitiveType>("u128")},
     {"float", std::make_shared<PrimitiveType>("float")},
     {"double", std::make_shared<PrimitiveType>("double")},
 };
@@ -48,6 +50,9 @@ static std::shared_ptr<Type> resolveTypeName(const TypeName *typeName) {
 
 static void castTo(std::unique_ptr<Expr> &expr,
                    const std::shared_ptr<Type> &type) {
+  if (*expr->type == *type)
+    return;
+
   auto cast = new CastExpr(expr->sourceRange, std::move(expr),
                            std::unique_ptr<TypeName>(type->toTypeName()));
   cast->type = type;
@@ -68,14 +73,17 @@ static bool tryAssignTo(std::unique_ptr<Expr> &from,
     const PrimitiveType *toT = (PrimitiveType *)toType.get();
 
     std::map<std::string, std::vector<std::string>> castMatrix = {
-        {"i8", {"i16", "i32", "i64", "u8", "u16", "u32", "u64"}},
-        {"i16", {"i32", "i64", "u16", "u32", "u64"}},
-        {"i32", {"i64", "u32", "u64"}},
-        {"i64", {"u64"}},
-        {"u8", {"i16", "i32", "i64", "u16", "u32", "u64"}},
-        {"u16", {"i32", "i64", "u32", "u64"}},
-        {"u32", {"i64", "u64"}},
-        {"u64", {}},
+        {"i8",
+         {"i16", "i32", "i64", "u8", "u16", "u32", "u64", "i128", "u128"}},
+        {"i16", {"i32", "i64", "u16", "u32", "u64", "i128", "u128"}},
+        {"i32", {"i64", "u32", "u64", "i128", "u128"}},
+        {"i64", {"u64", "i128", "u128"}},
+        {"i128", {"u128"}},
+        {"u8", {"i16", "i32", "i64", "u16", "u32", "u64", "i128", "u128"}},
+        {"u16", {"i32", "i64", "u32", "u64", "i128", "u128"}},
+        {"u32", {"i64", "u64", "i128", "u128"}},
+        {"u64", {"i128", "u128"}},
+        {"u128", {}},
         {"float", {"double"}},
         {"double", {}},
     };
@@ -108,14 +116,15 @@ static bool canBeCastedTo(std::unique_ptr<Expr> &from,
     PrimitiveType *fromT = (PrimitiveType *)from->type.get();
     const PrimitiveType *toT = (PrimitiveType *)toType.get();
 
-    std::vector<std::string> allNumberTypes = {"i8",    "i16",   "i32", "i64",
-                                               "u8",    "u16",   "u32", "u64",
-                                               "float", "double"};
+    std::vector<std::string> allNumberTypes = {
+        "i8",  "i16", "i32", "i64",  "i128",  "u8",
+        "u16", "u32", "u64", "u128", "float", "double"};
     std::map<std::string, std::vector<std::string>> castMatrix = {
         {"i8", allNumberTypes},    {"i16", allNumberTypes},
         {"i32", allNumberTypes},   {"i64", allNumberTypes},
-        {"u8", allNumberTypes},    {"u16", allNumberTypes},
-        {"u32", allNumberTypes},   {"u64", allNumberTypes},
+        {"i128", allNumberTypes},  {"u8", allNumberTypes},
+        {"u16", allNumberTypes},   {"u32", allNumberTypes},
+        {"u64", allNumberTypes},   {"u128", allNumberTypes},
         {"float", allNumberTypes}, {"double", allNumberTypes},
     };
 
@@ -168,6 +177,11 @@ public:
   }
 
   virtual std::any visit(FnDecl &fnDecl, std::any param) override {
+    if (!(fnDecl.body.get() && fnDecl.body->alywasReturns())) {
+      errors::put(fnDecl.error("function '" + fnDecl.name +
+                               "' does not always return a value"));
+    }
+
     if (!fnDecl.symbol.get())
       return std::any();
 
@@ -240,6 +254,39 @@ public:
     return std::any();
   }
 
+  virtual std::any visit(LambdaExpr &lambdaExpr, std::any param) override {
+    std::shared_ptr<Type> returnType(nullptr);
+    if (lambdaExpr.returnTypeName.get()) {
+      lambdaExpr.returnTypeName->accept(this, param);
+      returnType = lambdaExpr.returnTypeName->type;
+    }
+
+    std::vector<std::shared_ptr<Type>> paramTypes;
+    for (auto &p : lambdaExpr.params) {
+      if (p.get())
+        p->accept(this, param);
+
+      if (p->symbol.get()) {
+        paramTypes.push_back(p->symbol->type);
+      } else {
+        paramTypes.push_back(std::shared_ptr<Type>(nullptr));
+      }
+    }
+
+    lambdaExpr.type = std::make_shared<FunctionType>(paramTypes, returnType);
+
+    auto prevReturnType = currentReturnType;
+    currentReturnType = returnType;
+
+    if (lambdaExpr.body.get()) {
+      lambdaExpr.body->accept(this, param);
+    }
+
+    currentReturnType = prevReturnType;
+
+    return std::any();
+  }
+
   virtual std::any visit(Identifier &identifier, std::any param) override {
     if (!identifier.symbol.get())
       return std::any();
@@ -305,6 +352,11 @@ public:
       return std::any();
     if (!assignStmt.lval.get() || !assignStmt.rval->type.get())
       return std::any();
+
+    if (!utils::is<Identifier>(assignStmt.lval.get())) {
+      errors::put(assignStmt.error("invalid lvalue"));
+      return std::any();
+    }
 
     if (!tryAssignTo(assignStmt.rval, assignStmt.lval->type)) {
       errors::put(assignStmt.error("assignment type mismatch"));
@@ -376,12 +428,123 @@ public:
       return std::any();
     }
 
-    callExpr.type = callExpr.callee->type;
-
     auto functionType = (FunctionType *)(callExpr.callee->type.get());
+
+    callExpr.type = functionType->returnType;
+
     if (functionType->paramTypes.size() != callExpr.args.size()) {
       errors::put(callExpr.error("wrong number of arguments"));
       return std::any();
+    }
+
+    size_t smallerArgCount =
+        std::min(functionType->paramTypes.size(), callExpr.args.size());
+
+    for (size_t i = 0; i < smallerArgCount; i++) {
+      if (!callExpr.args[i].get() || !functionType->paramTypes[i].get())
+        continue;
+      if (!callExpr.args[i]->type.get())
+        continue;
+
+      if (!tryAssignTo(callExpr.args[i], functionType->paramTypes[i])) {
+        errors::put(callExpr.args[i]->error("argument type mismatch"));
+      }
+    }
+
+    return std::any();
+  }
+
+  virtual std::any visit(UnExpr &unExpr, std::any param) override {
+    BaseASTVisitor::visit(unExpr, param);
+
+    if (!unExpr.expr.get() || !unExpr.expr->type.get())
+      return std::any();
+
+    if (!utils::is<PrimitiveType>(unExpr.expr->type.get())) {
+      errors::put(unExpr.error("operand must be of primitive type"));
+      return std::any();
+    }
+
+    if (unExpr.op == UnOp::NEG) {
+      castTo(unExpr.expr, std::make_shared<PrimitiveType>("i32"));
+    }
+
+    unExpr.type = unExpr.expr->type;
+
+    return std::any();
+  }
+
+  virtual std::any visit(BinExpr &binExpr, std::any param) override {
+    BaseASTVisitor::visit(binExpr, param);
+
+    if (!binExpr.lhs.get() || !binExpr.rhs.get())
+      return std::any();
+    if (!binExpr.lhs->type.get() || !binExpr.rhs->type.get())
+      return std::any();
+
+    if (!utils::is<PrimitiveType>(binExpr.lhs->type.get()) ||
+        !utils::is<PrimitiveType>(binExpr.rhs->type.get())) {
+      errors::put(binExpr.error("operands must be of primitive type"));
+      return std::any();
+    }
+
+    switch (binExpr.op) {
+    case BinOp::ADD:
+    case BinOp::SUB:
+    case BinOp::MUL:
+    case BinOp::DIV: {
+      if (!tryAssignTo(binExpr.rhs, binExpr.lhs->type)) {
+        if (!tryAssignTo(binExpr.lhs, binExpr.rhs->type)) {
+          errors::put(
+              binExpr.error("operands incompatible, explicit cast required"));
+          return std::any();
+        }
+      }
+
+      binExpr.type = binExpr.lhs->type;
+
+      break;
+    }
+    case BinOp::MOD: {
+      auto lhsSuccess =
+          tryAssignTo(binExpr.lhs, std::make_shared<PrimitiveType>("i64"));
+      auto rhsSuccess =
+          tryAssignTo(binExpr.rhs, std::make_shared<PrimitiveType>("i64"));
+
+      if (!lhsSuccess || !rhsSuccess) {
+        errors::put(binExpr.error("operands must be of integer type"));
+        return std::any();
+      }
+
+      binExpr.type = std::make_shared<PrimitiveType>("i64");
+    }
+    case BinOp::EQ:
+    case BinOp::NE:
+    case BinOp::LT:
+    case BinOp::GT:
+    case BinOp::LE:
+    case BinOp::GE: {
+      if (!tryAssignTo(binExpr.rhs, binExpr.lhs->type)) {
+        if (!tryAssignTo(binExpr.lhs, binExpr.rhs->type)) {
+          errors::put(
+              binExpr.error("operands incompatible, explicit cast required"));
+          return std::any();
+        }
+      }
+
+      binExpr.type = std::make_shared<PrimitiveType>("i32");
+
+      break;
+    }
+    case BinOp::AND:
+    case BinOp::OR: {
+      castTo(binExpr.lhs, std::make_shared<PrimitiveType>("i32"));
+      castTo(binExpr.rhs, std::make_shared<PrimitiveType>("i32"));
+
+      binExpr.type = std::make_shared<PrimitiveType>("i32");
+
+      break;
+    }
     }
 
     return std::any();
@@ -394,9 +557,7 @@ void performTypeAnalysis(std::unique_ptr<Module> &module) {
   TypeAnalysisVisitor1 visitor1;
   TypeAnalysisVisitor2 visitor2;
 
-  for (auto &stmt : module->stmts) {
-    stmt->accept(&visitor1, std::any());
-  }
+  module->accept(&visitor1, nullptr);
 
   for (auto &stmt : module->stmts) {
     if (utils::is<FnDecl>(stmt.get()))

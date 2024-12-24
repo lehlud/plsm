@@ -4,6 +4,7 @@ grammar plsm;
 #include "AST/AST.h"
 #include "Utils.h"
 #include <memory>
+#include <boost/json.hpp>
 #include <boost/algorithm/string.hpp>
 
 using namespace plsm::utils;
@@ -95,7 +96,50 @@ stmt
      }
 	| whileStmt {
           $ast = ptrcast<Stmt>($ctx->whileStmt()->ast);
+     }
+	| inlineAsm {
+          $ast = ptrcast<Stmt>($ctx->inlineAsm()->ast);
      };
+
+inlineAsm
+	returns[std::unique_ptr<InlineAsm> ast]:
+	'inline' 'asm' '(' inlineAsmCode = string (
+		':' outputs += inlineAsmConstraint (
+			',' outputs += inlineAsmConstraint
+		)*
+	)? (
+		':' inputs += inlineAsmConstraint (
+			',' inputs += inlineAsmConstraint
+		)*
+	)? (':' clobbers += string ( ',' clobbers += string)*)? ')' ';' {
+        auto code = $ctx->inlineAsmCode->value;
+
+        std::vector<std::unique_ptr<InlineAsmConstraint>> outputs;
+        for (auto &output : $ctx->outputs) {
+            outputs.push_back(std::move(output->ast));
+        }
+
+        std::vector<std::unique_ptr<InlineAsmConstraint>> inputs;
+        for (auto &input : $ctx->inputs) {
+            inputs.push_back(std::move(input->ast));
+        }
+
+        std::vector<std::string> clobbers;
+        for (auto &clobber : $ctx->clobbers) {
+            clobbers.push_back(clobber->value);
+        }
+
+        $ast = std::make_unique<InlineAsm>(
+            getSourceRange($ctx), code, std::move(outputs), std::move(inputs), clobbers);
+    };
+
+inlineAsmConstraint
+	returns[std::unique_ptr<InlineAsmConstraint> ast]:
+	string '(' IDENTIFIER ')' {
+        auto constraint = $ctx->string()->value;
+        auto variable = $ctx->IDENTIFIER()->getText();
+        $ast = std::make_unique<InlineAsmConstraint>(getSourceRange($ctx), constraint, variable);
+    };
 
 whileStmt
 	returns[std::unique_ptr<WhileStmt> ast]:
@@ -168,7 +212,7 @@ fnDecl
 
 fnParam
 	returns[std::unique_ptr<FnParam> ast]:
-	IDENTIFIER typeName {
+	IDENTIFIER ':' typeName {
           $ast = std::make_unique<FnParam>(getSourceRange($ctx), $ctx->IDENTIFIER()->getText(), std::move($ctx->typeName()->ast));
      };
 
@@ -217,10 +261,6 @@ binaryExpr
           auto binExpr = std::make_unique<BinExpr>(getSourceRange($ctx), op, std::move($ctx->lhs->ast), std::move($ctx->rhs->ast));
           $ast = ptrcast<Expr>(binExpr);
      }
-	| operand = binaryExpr 'as' typeName {
-          auto castExpr = std::make_unique<CastExpr>(getSourceRange($ctx), std::move($ctx->operand->ast), std::move($ctx->typeName()->ast));
-          $ast = ptrcast<Expr>(castExpr);
-     }
 	| lhs = binaryExpr op = (
 		'=='
 		| '!='
@@ -258,6 +298,10 @@ unaryExpr
      }
 	| functionCall {
           $ast = ptrcast<Expr>($ctx->functionCall()->ast);
+     }
+	| unaryExpr 'as' typeName {
+          auto castExpr = std::make_unique<CastExpr>(getSourceRange($ctx), std::move($ctx->unaryExpr()->ast), std::move($ctx->typeName()->ast));
+          $ast = ptrcast<Expr>(castExpr);
      }
 	| '!' unaryExpr {
           auto unExpr = std::make_unique<UnExpr>(getSourceRange($ctx), UnOp::NOT, std::move($ctx->unaryExpr()->ast));
@@ -315,6 +359,9 @@ factorExpr
           auto val = std::make_unique<IntValue>(getSourceRange($ctx), text == "true" ? 1 : 0);
           $ast = ptrcast<Expr>(val);
      }
+	| lambdaExpr {
+          $ast = ptrcast<Expr>($ctx->lambdaExpr()->ast);
+     }
 	| '(' expr ')' {
           $ast = std::move($ctx->expr()->ast);
      };
@@ -330,6 +377,17 @@ functionCall
           $ast = std::make_unique<CallExpr>(getSourceRange($ctx), std::move($ctx->callee->ast), std::move(args));
      };
 
+lambdaExpr
+	returns[std::unique_ptr<LambdaExpr> ast]:
+	'@' '(' (params += fnParam (',' params += fnParam)*)? ')' typeName '{' block '}' {
+          std::vector<std::unique_ptr<FnParam>> params;
+          for (auto &param : $ctx->params) {
+               params.push_back(std::move(param->ast));
+          }
+
+          $ast = std::make_unique<LambdaExpr>(getSourceRange($ctx), std::move(params), std::move($ctx->typeName()->ast), std::move($ctx->block()->ast));
+     };
+
 typeName
 	returns[std::unique_ptr<TypeName> ast]:
 	IDENTIFIER {
@@ -338,6 +396,18 @@ typeName
           $ast = ptrcast<TypeName>(named);
      };
 
+string
+	returns[std::string value]:
+	STRING {
+          auto encoded = $ctx->STRING()->getText();
+          auto decoded = boost::json::parse(encoded);
+          $value = decoded.as_string();
+     };
+
+STRING: '"' (ESC | ~["\\\r\n])* '"';
+fragment ESC: '\\' (["\\/bfnrt] | 'u' HEX HEX HEX HEX);
+fragment HEX: [0-9a-fA-F];
+
 INT: [0-9]+ | '0x' [0-9a-fA-F]+ | '0o' [0-7]+ | '0b' [01]+;
 FLOAT: [0-9]+ '.' | [0-9]* '.' [0-9]+;
 BOOL: 'true' | 'false';
@@ -345,3 +415,4 @@ BOOL: 'true' | 'false';
 IDENTIFIER: [a-zA-Z_] [a-zA-Z0-9_]*;
 
 WHITESPACE: [ \r\n\t]+ -> skip;
+COMMENT: (('//' ~( '\r' | '\n')*) | ('/*' .*? '*/')) -> skip;
