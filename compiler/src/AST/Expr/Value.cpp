@@ -22,5 +22,11 @@ FloatValue *FloatValue::fromJson(boost::json::value json) {
   return new FloatValue(SourceRange::json(), json.as_double());
 }
 
+boost::json::value StringValue::toJson() const { return boost::json::value_from(value); }
+
+StringValue *StringValue::fromJson(boost::json::value json) {
+  return new StringValue(SourceRange::json(), json.as_string().c_str());
+}
+
 } // namespace ast
 } // namespace plsm

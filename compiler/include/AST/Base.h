@@ -27,6 +27,7 @@ class LambdaExpr;
 class UnExpr;
 class IntValue;
 class FloatValue;
+class StringValue;
 
 class Import;
 class Module;
@@ -37,11 +38,14 @@ class ExprStmt;
 class FnParam;
 class FnDecl;
 class IfStmt;
+class InlineAsm;
+class InlineAsmConstraint;
 class RetStmt;
 class VarDecl;
 class WhileStmt;
 
 class NamedTypeName;
+class PointerTypeName;
 
 class ASTVisitor {
 public:
@@ -55,6 +59,7 @@ public:
   virtual std::any visit(UnExpr &unExpr, std::any param) = 0;
   virtual std::any visit(IntValue &intValue, std::any param) = 0;
   virtual std::any visit(FloatValue &floatValue, std::any param) = 0;
+  virtual std::any visit(StringValue &stringValue, std::any param) = 0;
 
   virtual std::any visit(Import &import, std::any param) = 0;
   virtual std::any visit(Module &module, std::any param) = 0;
@@ -65,14 +70,14 @@ public:
   virtual std::any visit(FnParam &fnParam, std::any param) = 0;
   virtual std::any visit(FnDecl &fnDecl, std::any param) = 0;
   virtual std::any visit(IfStmt &ifStmt, std::any param) = 0;
-  virtual std::any visit(InlineAsmConstraint &inlineAsmConstraint,
-                         std::any param) = 0;
+  virtual std::any visit(InlineAsmConstraint &inlineAsmConstraint, std::any param) = 0;
   virtual std::any visit(InlineAsm &inlineAsm, std::any param) = 0;
   virtual std::any visit(RetStmt &retStmt, std::any param) = 0;
   virtual std::any visit(VarDecl &varDecl, std::any param) = 0;
   virtual std::any visit(WhileStmt &whileStmt, std::any param) = 0;
 
   virtual std::any visit(NamedTypeName &namedTypeName, std::any param) = 0;
+  virtual std::any visit(PointerTypeName &pointerTypeName, std::any param) = 0;
 };
 
 } // namespace ast
@@ -89,8 +94,7 @@ public:
 
 protected:
   template <class CurrNode>
-  static inline boost::json::value getJsonProperty(boost::json::value json,
-                                                   std::string property) {
+  static inline boost::json::value getJsonProperty(boost::json::value json, std::string property) {
     boost::json::value prop;
     try {
       if (!json.as_object().contains(property))
@@ -98,8 +102,8 @@ protected:
       prop = json.as_object().at(property);
     } catch (...) {
       std::cout << boost::json::serialize(json) << std::endl;
-      throw std::runtime_error("missing property '" + property + "' in " +
-                               typeid(CurrNode).name() + "::fromJson");
+      throw std::runtime_error("missing property '" + property + "' in " + typeid(CurrNode).name() +
+                               "::fromJson");
     }
 
     return prop;
@@ -111,22 +115,18 @@ protected:
     try {
       return boost::json::value_to<T>(prop);
     } catch (...) {
-      throw std::runtime_error("invalid value for property '" + property +
-                               "' in " + typeid(CurrNode).name() +
+      throw std::runtime_error("invalid value for property '" + property + "' in " + typeid(CurrNode).name() +
                                "::fromJson");
     }
   }
 
   template <class CurrNode, class SubNode>
-  static inline auto fromJsonProperty(boost::json::value json,
-                                      std::string property) {
-    return std::unique_ptr<SubNode>(
-        SubNode::fromJson(getJsonProperty<CurrNode>(json, property)));
+  static inline auto fromJsonProperty(boost::json::value json, std::string property) {
+    return std::unique_ptr<SubNode>(SubNode::fromJson(getJsonProperty<CurrNode>(json, property)));
   }
 
   template <class CurrNode, class SubNode>
-  static inline auto fromJsonVector(boost::json::value json,
-                                    std::string property) {
+  static inline auto fromJsonVector(boost::json::value json, std::string property) {
     auto arr = getJsonProperty<CurrNode>(json, property).as_array();
 
     std::vector<std::unique_ptr<SubNode>> result;
@@ -140,20 +140,16 @@ protected:
 
 class SourceRange {
 public:
-  SourceRange(const std::string &file, std::string text,
-              std::pair<size_t, size_t> start, std::pair<size_t, size_t> end)
+  SourceRange(const std::string &file, std::string text, std::pair<size_t, size_t> start,
+              std::pair<size_t, size_t> end)
       : file(file), text(text), start(start), end(end) {}
 
   const std::string file, text;
   const std::pair<size_t, size_t> start, end;
 
-  static SourceRange unknown() {
-    return SourceRange("<?>", "<?>", {0, 0}, {0, 0});
-  };
+  static SourceRange unknown() { return SourceRange("<?>", "<?>", {0, 0}, {0, 0}); };
 
-  static SourceRange json() {
-    return SourceRange("<json>", "<json>", {0, 0}, {0, 0});
-  };
+  static SourceRange json() { return SourceRange("<json>", "<json>", {0, 0}, {0, 0}); };
 };
 
 class TypeName;
@@ -166,7 +162,7 @@ public:
   virtual TypeName *toTypeName() = 0;
 
   virtual bool operator==(const Type &other) = 0;
-  virtual bool operator!=(const Type &other) { return !(*this == other); }
+  virtual bool operator!=(const Type &other) { return !((*this) == other); }
 
   static Type *fromJson(boost::json::value json);
 };
@@ -187,9 +183,7 @@ public:
 
   const SourceRange sourceRange;
 
-  virtual std::string toJsonString() const {
-    return boost::json::serialize(toJson(), {});
-  }
+  virtual std::string toJsonString() const { return boost::json::serialize(toJson(), {}); }
 
   static ASTNode *fromJson(boost::json::value json);
 
@@ -200,8 +194,8 @@ public:
   virtual std::string error(const std::string &message) const {
     std::stringstream ss;
 
-    ss << "In file " << sourceRange.file << ":" << sourceRange.start.first
-       << ":" << sourceRange.start.second + 1 << "\n"
+    ss << "In file " << sourceRange.file << ":" << sourceRange.start.first << ":"
+       << sourceRange.start.second + 1 << "\n"
        << terminal::cyan << sourceRange.text << terminal::reset << "\n"
        << terminal::red << message << terminal::reset;
 

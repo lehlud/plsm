@@ -37,9 +37,7 @@ public:
     return std::any();
   }
 
-  virtual std::any visit(Identifier &identifier, std::any param) override {
-    return std::any();
-  }
+  virtual std::any visit(Identifier &identifier, std::any param) override { return std::any(); }
 
   virtual std::any visit(LambdaExpr &lambdaExpr, std::any param) override {
     if (lambdaExpr.returnTypeName.get())
@@ -62,17 +60,13 @@ public:
     return std::any();
   }
 
-  virtual std::any visit(IntValue &intValue, std::any param) override {
-    return std::any();
-  }
+  virtual std::any visit(IntValue &intValue, std::any param) override { return std::any(); }
 
-  virtual std::any visit(FloatValue &floatValue, std::any param) override {
-    return std::any();
-  }
+  virtual std::any visit(FloatValue &floatValue, std::any param) override { return std::any(); }
 
-  virtual std::any visit(Import &import, std::any param) override {
-    return std::any();
-  }
+  virtual std::any visit(StringValue &stringValue, std::any param) override { return std::any(); }
+
+  virtual std::any visit(Import &import, std::any param) override { return std::any(); }
 
   virtual std::any visit(Module &module, std::any param) override {
     for (auto &import : module.imports) {
@@ -142,8 +136,9 @@ public:
     return std::any();
   }
 
-  virtual std::any visit(InlineAsmConstraint &inlineAsmConstraint,
-                         std::any param) override {
+  virtual std::any visit(InlineAsmConstraint &inlineAsmConstraint, std::any param) override {
+    if (inlineAsmConstraint.value.get())
+      inlineAsmConstraint.value->accept(this, param);
     return std::any();
   }
 
@@ -182,8 +177,11 @@ public:
     return std::any();
   }
 
-  virtual std::any visit(NamedTypeName &namedTypeName,
-                         std::any param) override {
+  virtual std::any visit(NamedTypeName &namedTypeName, std::any param) override { return std::any(); }
+
+  virtual std::any visit(PointerTypeName &pointerTypeName, std::any param) override {
+    if (pointerTypeName.baseTypeName.get())
+      pointerTypeName.baseTypeName->accept(this, param);
     return std::any();
   }
 };

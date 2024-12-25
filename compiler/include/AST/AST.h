@@ -24,6 +24,8 @@
 #include "Stmt/WhileStmt.h"
 
 #include "Type/FunctionType.h"
+#include "Type/PointerType.h"
 #include "Type/PrimitiveType.h"
 
 #include "TypeName/NamedTypeName.h"
+#include "TypeName/PointerTypeName.h"

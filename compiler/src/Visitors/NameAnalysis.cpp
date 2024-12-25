@@ -13,8 +13,7 @@ class NameAnalysisVisitor1 : public ast::BaseASTVisitor {
   std::vector<std::map<std::string, std::shared_ptr<ast::Symbol>>> *scopes;
 
 public:
-  NameAnalysisVisitor1(
-      std::vector<std::map<std::string, std::shared_ptr<ast::Symbol>>> *scopes)
+  NameAnalysisVisitor1(std::vector<std::map<std::string, std::shared_ptr<ast::Symbol>>> *scopes)
       : scopes(scopes) {}
 
   virtual std::any visit(ast::FnDecl &fnDecl, std::any param) override {
@@ -22,8 +21,7 @@ public:
       return std::any();
 
     if (scopes->back().count(fnDecl.name)) {
-      errors::put(
-          fnDecl.error("redeclaration of global symbol '" + fnDecl.name + "'"));
+      errors::put(fnDecl.error("redeclaration of global symbol '" + fnDecl.name + "'"));
       return std::any();
     }
 
@@ -39,8 +37,7 @@ public:
       return std::any();
 
     if (scopes->back().count(varDecl.name)) {
-      errors::put(varDecl.error("redeclaration of global symbol '" +
-                                varDecl.name + "'"));
+      errors::put(varDecl.error("redeclaration of global symbol '" + varDecl.name + "'"));
       return std::any();
     }
 
@@ -55,9 +52,7 @@ public:
 class NameAnalysisVisitor2 : public ast::BaseASTVisitor {
   std::vector<std::map<std::string, std::shared_ptr<ast::Symbol>>> *scopes;
 
-  void push() {
-    scopes->push_back(std::map<std::string, std::shared_ptr<ast::Symbol>>());
-  }
+  void push() { scopes->push_back(std::map<std::string, std::shared_ptr<ast::Symbol>>()); }
 
   void pop() { scopes->pop_back(); }
 
@@ -72,8 +67,7 @@ class NameAnalysisVisitor2 : public ast::BaseASTVisitor {
   }
 
 public:
-  NameAnalysisVisitor2(
-      std::vector<std::map<std::string, std::shared_ptr<ast::Symbol>>> *scopes)
+  NameAnalysisVisitor2(std::vector<std::map<std::string, std::shared_ptr<ast::Symbol>>> *scopes)
       : scopes(scopes) {}
 
   virtual std::any visit(ast::FnParam &fnParam, std::any param) override {
@@ -118,8 +112,7 @@ public:
     auto symbol = findSymbol(identifier.name);
 
     if (!symbol.get()) {
-      errors::put(identifier.error("unable to resolve identifier '" +
-                                   identifier.name + "'"));
+      errors::put(identifier.error("unable to resolve identifier '" + identifier.name + "'"));
       return std::any();
     }
 

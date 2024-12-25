@@ -10,6 +10,7 @@
 #include <llvm/CodeGen/Passes.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/InlineAsm.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
@@ -28,8 +29,7 @@ using namespace ast;
 
 namespace {
 
-static llvm::Type *getLLVMType(llvm::LLVMContext &ctx,
-                               const std::shared_ptr<Type> &type) {
+static llvm::Type *getLLVMType(llvm::LLVMContext &ctx, const std::shared_ptr<Type> &type) {
   if (utils::is<PrimitiveType>(type.get())) {
     auto primitiveType = (PrimitiveType *)type.get();
     if (primitiveType->name == "i8" || primitiveType->name == "u8")
@@ -48,14 +48,20 @@ static llvm::Type *getLLVMType(llvm::LLVMContext &ctx,
       return llvm::Type::getDoubleTy(ctx);
   }
 
+  else if (utils::is<PointerType>(type.get())) {
+    auto pointerType = (PointerType *)type.get();
+    auto baseType = getLLVMType(ctx, pointerType->baseType);
+    return baseType->getPointerTo();
+  }
+
   else if (utils::is<FunctionType>(type.get())) {
     auto functionType = (FunctionType *)type.get();
     auto returnType = getLLVMType(ctx, functionType->returnType);
 
     std::vector<llvm::Type *> llvmParams;
-    llvmParams.push_back(llvm::IntegerType::get(ctx, 8)->getPointerTo());
     for (auto &paramType : functionType->paramTypes)
       llvmParams.push_back(getLLVMType(ctx, paramType));
+    llvmParams.push_back(llvm::IntegerType::get(ctx, 8)->getPointerTo());
 
     return llvm::FunctionType::get(returnType, llvmParams, false);
   }
@@ -72,29 +78,20 @@ class IRGenerator1 : public BaseASTVisitor {
   std::set<llvm::Value *> &functions;
 
 public:
-  IRGenerator1(llvm::LLVMContext &ctx, llvm::Module &mod,
-               llvm::IRBuilder<> &builder,
-               std::map<Symbol *, llvm::Value *> &symbolMap,
-               std::set<llvm::Value *> &functions)
-      : ctx(ctx), mod(mod), builder(builder), symbolMap(symbolMap),
-        functions(functions) {}
+  IRGenerator1(llvm::LLVMContext &ctx, llvm::Module &mod, llvm::IRBuilder<> &builder,
+               std::map<Symbol *, llvm::Value *> &symbolMap, std::set<llvm::Value *> &functions)
+      : ctx(ctx), mod(mod), builder(builder), symbolMap(symbolMap), functions(functions) {}
 
   virtual std::any visit(VarDecl &varDecl, std::any param) override {
     auto llvmType = getLLVMType(ctx, varDecl.symbol->type);
-
-    // auto global = new llvm::GlobalVariable(mod, llvmType, false,
-    //                                        llvm::GlobalValue::ExternalLinkage,
-    //                                        nullptr, varDecl.name);
     auto global = mod.getOrInsertGlobal(varDecl.name, llvmType);
-
     symbolMap[varDecl.symbol.get()] = global;
 
     return std::any();
   }
 
   virtual std::any visit(FnDecl &fnDecl, std::any param) override {
-    auto functionType =
-        (llvm::FunctionType *)getLLVMType(ctx, fnDecl.symbol->type);
+    auto functionType = (llvm::FunctionType *)getLLVMType(ctx, fnDecl.symbol->type);
 
     mod.getOrInsertFunction(fnDecl.name, functionType);
     auto function = mod.getFunction(fnDecl.name);
@@ -117,53 +114,51 @@ class IRGenerator2 : public BaseASTVisitor {
   llvm::Value *retStore = nullptr;
   llvm::BasicBlock *retBlock = nullptr;
 
-  llvm::Value *rvalueForLValue = nullptr;
+  bool requireLValue = false;
 
-  size_t labelCounter = 0;
-  std::string createLabel() { return "L" + std::to_string(labelCounter++); }
+  llvm::StructType *closureType = nullptr;
+  llvm::PointerType *pointerType = nullptr;
 
   llvm::Value *wrapCallee(llvm::Value *callee) {
-    auto ptr = llvm::IntegerType::get(ctx, 8)->getPointerTo();
-    auto structType = llvm::StructType::get(ptr, callee->getType());
+    auto value = (llvm::Value *)llvm::UndefValue::get(closureType);
+    auto calleePointer = builder.CreatePointerCast(callee, pointerType);
+    value = builder.CreateInsertValue(value, calleePointer, 0);
+    auto nullContext = llvm::ConstantPointerNull::get(pointerType);
+    value = builder.CreateInsertValue(value, nullContext, 1);
 
-    auto store = builder.CreateAlloca(structType);
-    auto ep = builder.CreateStructGEP(structType, store, 0);
-    builder.CreateStore(llvm::ConstantPointerNull::get(ptr), ep);
-    ep = builder.CreateStructGEP(structType, store, 1);
-    builder.CreateStore(callee, ep);
-
-    return store;
+    return value;
 
     // (f() -> asdf) -> { context, f() -> asdf }
   }
 
 public:
-  IRGenerator2(llvm::LLVMContext &ctx, llvm::Module &mod,
-               llvm::IRBuilder<> &builder,
-               std::map<Symbol *, llvm::Value *> &symbolMap,
-               std::set<llvm::Value *> &functions)
-      : ctx(ctx), mod(mod), builder(builder), symbolMap(symbolMap),
-        functions(functions) {}
+  IRGenerator2(llvm::LLVMContext &ctx, llvm::Module &mod, llvm::IRBuilder<> &builder,
+               std::map<Symbol *, llvm::Value *> &symbolMap, std::set<llvm::Value *> &functions)
+      : ctx(ctx), mod(mod), builder(builder), symbolMap(symbolMap), functions(functions) {
+    this->pointerType = llvm::IntegerType::get(ctx, 8)->getPointerTo();
+    this->closureType = llvm::StructType::get(pointerType, pointerType);
+  }
 
   virtual std::any visit(FnDecl &fnDecl, std::any param) override {
     auto function = mod.getFunction(fnDecl.name);
-    auto block = llvm::BasicBlock::Create(ctx, createLabel(), function);
+    auto block = llvm::BasicBlock::Create(ctx, "", function);
     builder.SetInsertPoint(block);
 
     size_t i = 0;
     for (auto &arg : function->args()) {
-      if (i > 0) {
-        auto store = builder.CreateAlloca(arg.getType(), nullptr);
-        builder.CreateStore(&arg, store);
-        symbolMap[fnDecl.params[i - 1]->symbol.get()] = store;
-      }
+      if (i == fnDecl.params.size())
+        break;
+
+      auto store = builder.CreateAlloca(arg.getType(), nullptr);
+      builder.CreateStore(&arg, store);
+      symbolMap[fnDecl.params[i]->symbol.get()] = store;
 
       i += 1;
     }
 
     auto fnType = (llvm::FunctionType *)getLLVMType(ctx, fnDecl.symbol->type);
     retStore = builder.CreateAlloca(fnType->getReturnType());
-    retBlock = llvm::BasicBlock::Create(ctx, createLabel(), function);
+    retBlock = llvm::BasicBlock::Create(ctx, "", function);
 
     BaseASTVisitor::visit(fnDecl, param);
     if (!fnDecl.body->alywasReturns())
@@ -268,8 +263,7 @@ public:
   }
 
   virtual std::any visit(CastExpr &castExpr, std::any param) override {
-    auto value =
-        std::any_cast<llvm::Value *>(castExpr.value->accept(this, param));
+    auto value = std::any_cast<llvm::Value *>(castExpr.value->accept(this, param));
 
     if (utils::is<PrimitiveType>(castExpr.value->type.get()) &&
         utils::is<PrimitiveType>(castExpr.type.get())) {
@@ -278,11 +272,9 @@ public:
 
       auto newType = getLLVMType(ctx, castExpr.type);
 
-      auto wasFloat =
-          primitiveType->name == "float" || primitiveType->name == "double";
+      auto wasFloat = primitiveType->name == "float" || primitiveType->name == "double";
       auto wasUnsigned = primitiveType->name[0] == 'u';
-      auto willFloat = newPrimitiveType->name == "float" ||
-                       newPrimitiveType->name == "double";
+      auto willFloat = newPrimitiveType->name == "float" || newPrimitiveType->name == "double";
       auto willUnsigned = newPrimitiveType->name[0] == 'u';
 
       if (wasFloat) {
@@ -320,63 +312,69 @@ public:
   }
 
   virtual std::any visit(CallExpr &callExpr, std::any param) override {
-    auto callee =
-        std::any_cast<llvm::Value *>(callExpr.callee->accept(this, param));
+    auto callee = std::any_cast<llvm::Value *>(callExpr.callee->accept(this, param));
 
-    auto ptrType = llvm::IntegerType::get(ctx, 8)->getPointerTo();
-    auto structType = llvm::StructType::get(ptrType, ptrType);
-    auto ep = builder.CreateStructGEP(structType, callee, 0);
-    auto callCtx = builder.CreateLoad(ptrType, ep);
-
-    ep = builder.CreateStructGEP(structType, callee, 1);
-    auto realCallee = (llvm::Value *)builder.CreateLoad(ptrType, ep);
-
-    // realCallee = builder.CreatePointerCast(realCallee, calleeType);
+    auto realCallee = builder.CreateExtractValue(callee, 0);
+    auto callCtx = builder.CreateExtractValue(callee, 1);
 
     std::vector<llvm::Value *> llvmArgs;
+    for (auto &arg : callExpr.args)
+      llvmArgs.push_back(std::any_cast<llvm::Value *>(arg->accept(this, param)));
     llvmArgs.push_back(callCtx);
-    for (auto &arg : callExpr.args) {
-      llvmArgs.push_back(
-          std::any_cast<llvm::Value *>(arg->accept(this, param)));
-    }
 
-    auto calleeType =
-        (llvm::FunctionType *)getLLVMType(ctx, callExpr.callee->type);
+    auto calleeType = (llvm::FunctionType *)getLLVMType(ctx, callExpr.callee->type);
     return (llvm::Value *)builder.CreateCall(calleeType, realCallee, llvmArgs);
   }
 
   virtual std::any visit(Identifier &identifier, std::any param) override {
     auto value = symbolMap[identifier.symbol.get()];
 
-    if (rvalueForLValue) {
-      builder.CreateStore(rvalueForLValue, value);
-      return nullptr;
-    }
+    if (requireLValue)
+      return value;
 
-    else {
-      if (functions.count(value))
-        return wrapCallee(value);
-      if (utils::is<FunctionType>(identifier.type.get()))
-        return value;
+    if (functions.count(value))
+      return wrapCallee(value);
+    if (utils::is<FunctionType>(identifier.type.get()))
+      return (llvm::Value *)builder.CreateLoad(closureType, value);
 
-      auto loadType = getLLVMType(ctx, identifier.type);
-      return (llvm::Value *)builder.CreateLoad(loadType, value);
-    }
+    auto loadType = getLLVMType(ctx, identifier.type);
+    return (llvm::Value *)builder.CreateLoad(loadType, value);
   }
 
   virtual std::any visit(IntValue &intValue, std::any param) override {
-    return (llvm::Value *)llvm::ConstantInt::get(
-        getLLVMType(ctx, intValue.type), intValue.value);
+    return (llvm::Value *)llvm::ConstantInt::get(getLLVMType(ctx, intValue.type), intValue.value);
   }
 
   virtual std::any visit(FloatValue &floatValue, std::any param) override {
-    return (llvm::Value *)llvm::ConstantFP::get(
-        getLLVMType(ctx, floatValue.type), floatValue.value);
+    return (llvm::Value *)llvm::ConstantFP::get(getLLVMType(ctx, floatValue.type), floatValue.value);
+  }
+
+  virtual std::any visit(StringValue &stringValue, std::any param) override {
+    return (llvm::Value *)builder.CreateGlobalStringPtr(stringValue.value);
+
+    auto valType = llvm::Type::getInt8Ty(ctx);
+
+    auto size = stringValue.value.size() + 1;
+    auto store = builder.CreateAlloca(llvm::Type::getInt8Ty(ctx), size);
+
+    size_t i = 0;
+    for (auto &c : stringValue.value) {
+      auto ep = builder.CreateConstGEP1_64(valType, store, i);
+      builder.CreateStore(llvm::ConstantInt::get(valType, c), ep);
+      i += 1;
+    }
+
+    // add null terminator
+    auto ep = builder.CreateConstGEP1_64(valType, store, i);
+    builder.CreateStore(llvm::ConstantInt::get(valType, 0), ep);
+
+    auto ptr = builder.CreatePointerCast(store, pointerType);
+
+    return (llvm::Value *)ptr;
   }
 
   virtual std::any visit(RetStmt &retStmt, std::any param) override {
-    auto value =
-        std::any_cast<llvm::Value *>(retStmt.value->accept(this, param));
+    auto value = std::any_cast<llvm::Value *>(retStmt.value->accept(this, param));
 
     builder.CreateStore(value, retStore);
     builder.CreateBr(retBlock);
@@ -385,16 +383,15 @@ public:
   }
 
   virtual std::any visit(IfStmt &ifStmt, std::any param) override {
-    auto cond =
-        std::any_cast<llvm::Value *>(ifStmt.condition->accept(this, param));
+    auto cond = std::any_cast<llvm::Value *>(ifStmt.condition->accept(this, param));
 
     auto fn = builder.GetInsertBlock()->getParent();
-    auto ifBlock = llvm::BasicBlock::Create(ctx, createLabel(), fn);
-    auto elseBlock = llvm::BasicBlock::Create(ctx, createLabel(), fn);
+    auto ifBlock = llvm::BasicBlock::Create(ctx, "", fn);
+    auto elseBlock = llvm::BasicBlock::Create(ctx, "", fn);
 
     llvm::BasicBlock *endBlock = nullptr;
     if (!ifStmt.alywasReturns())
-      endBlock = llvm::BasicBlock::Create(ctx, createLabel(), fn);
+      endBlock = llvm::BasicBlock::Create(ctx, "", fn);
 
     builder.CreateCondBr(cond, ifBlock, elseBlock);
 
@@ -416,15 +413,14 @@ public:
 
   virtual std::any visit(WhileStmt &whileStmt, std::any param) override {
     auto fn = builder.GetInsertBlock()->getParent();
-    auto condBlock = llvm::BasicBlock::Create(ctx, createLabel(), fn);
-    auto whileBlock = llvm::BasicBlock::Create(ctx, createLabel(), fn);
-    auto endBlock = llvm::BasicBlock::Create(ctx, createLabel(), fn);
+    auto condBlock = llvm::BasicBlock::Create(ctx, "", fn);
+    auto whileBlock = llvm::BasicBlock::Create(ctx, "", fn);
+    auto endBlock = llvm::BasicBlock::Create(ctx, "", fn);
 
     builder.CreateBr(condBlock);
 
     builder.SetInsertPoint(condBlock);
-    auto cond =
-        std::any_cast<llvm::Value *>(whileStmt.condition->accept(this, param));
+    auto cond = std::any_cast<llvm::Value *>(whileStmt.condition->accept(this, param));
     builder.CreateCondBr(cond, whileBlock, endBlock);
 
     builder.SetInsertPoint(whileBlock);
@@ -438,12 +434,56 @@ public:
   }
 
   virtual std::any visit(AssignStmt &assignStmt, std::any param) override {
-    auto rvalue =
-        std::any_cast<llvm::Value *>(assignStmt.rval->accept(this, param));
+    auto rvalue = std::any_cast<llvm::Value *>(assignStmt.rval->accept(this, param));
 
-    rvalueForLValue = rvalue;
-    auto lvalue = assignStmt.lval->accept(this, param);
-    rvalueForLValue = nullptr;
+    requireLValue = true;
+    auto lvalue = std::any_cast<llvm::Value *>(assignStmt.lval->accept(this, param));
+    requireLValue = false;
+
+    builder.CreateStore(rvalue, lvalue);
+
+    return std::any();
+  }
+
+  virtual std::any visit(InlineAsm &inlineAsm, std::any param) override {
+    // Handle the inline assembly code.
+    auto codeValue = builder.CreateGlobalStringPtr(inlineAsm.code);
+
+    // Build constraints string for LLVM InlineAsm
+    std::string asmConstraints;
+    for (const auto &output : inlineAsm.outputs)
+      asmConstraints += "=" + output->constraint + ",";
+    for (const auto &input : inlineAsm.inputs)
+      asmConstraints += input->constraint + ",";
+    for (const auto &clobber : inlineAsm.clobbers)
+      asmConstraints += "~{" + clobber + "}" + ",";
+    if (!asmConstraints.empty())
+      asmConstraints.pop_back(); // Remove trailing comma
+
+    // Process inputs and prepare arguments
+    std::vector<llvm::Value *> llvmArgs;
+    for (const auto &output : inlineAsm.outputs) {
+      requireLValue = true;
+      auto outputValue = std::any_cast<llvm::Value *>(output->value->accept(this, param));
+      requireLValue = false;
+
+      llvmArgs.push_back(outputValue);
+    }
+
+    for (const auto &input : inlineAsm.inputs) {
+      auto inputValue = std::any_cast<llvm::Value *>(input->value->accept(this, param));
+      llvmArgs.push_back(inputValue);
+    }
+
+    std::vector<llvm::Type *> paramTypes;
+    for (const auto &arg : llvmArgs)
+      paramTypes.push_back(arg->getType());
+
+    auto asmType = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), paramTypes, false);
+    auto inlineAsmValue = llvm::InlineAsm::get(asmType, inlineAsm.code, asmConstraints,
+                                               true /* hasSideEffects */, false /* isAlignStack */);
+
+    builder.CreateCall(inlineAsmValue, llvmArgs);
 
     return std::any();
   }
@@ -466,8 +506,8 @@ static void runMPM(llvm::Module &mod) {
 
   passBuilder.crossRegisterProxies(lam, fam, gam, mam);
 
-  mpm = passBuilder.buildModuleOptimizationPipeline(
-      llvm::OptimizationLevel::O3, llvm::ThinOrFullLTOPhase::None);
+  mpm = passBuilder.buildModuleOptimizationPipeline(llvm::OptimizationLevel::O3,
+                                                    llvm::ThinOrFullLTOPhase::None);
 
   mpm.run(mod, mam);
 
@@ -477,8 +517,7 @@ static void runMPM(llvm::Module &mod) {
   lam.clear();
 }
 
-static void writeToFile(llvm::LLVMContext &ctx, llvm::Module &mod,
-                        llvm::IRBuilder<> &builder,
+static void writeToFile(llvm::LLVMContext &ctx, llvm::Module &mod, llvm::IRBuilder<> &builder,
                         const std::string &outfile) {
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
@@ -495,10 +534,9 @@ static void writeToFile(llvm::LLVMContext &ctx, llvm::Module &mod,
   if (!t)
     throw std::runtime_error(err);
 
-  llvm::TargetMachine *targetMachine =
-      t->createTargetMachine(target, "", "", llvm::TargetOptions(),
-                             // TODO: make configurable
-                             llvm::Reloc::PIC_);
+  llvm::TargetMachine *targetMachine = t->createTargetMachine(target, "", "", llvm::TargetOptions(),
+                                                              // TODO: make configurable
+                                                              llvm::Reloc::PIC_);
 
   mod.setDataLayout(targetMachine->createDataLayout());
 
@@ -514,8 +552,7 @@ static void writeToFile(llvm::LLVMContext &ctx, llvm::Module &mod,
   pm.add(new llvm::TargetLibraryInfoWrapperPass());
   pm.add(new llvm::MachineModuleInfoWrapperPass(&tm));
 
-  bool objResult = targetMachine->addPassesToEmitFile(
-      pm, dest, nullptr, llvm::CodeGenFileType::ObjectFile);
+  bool objResult = targetMachine->addPassesToEmitFile(pm, dest, nullptr, llvm::CodeGenFileType::ObjectFile);
 
   if (objResult)
     throw std::runtime_error("failed to produce " + outfile);
@@ -526,8 +563,7 @@ static void writeToFile(llvm::LLVMContext &ctx, llvm::Module &mod,
 
 } // namespace
 
-void compileModule(std::unique_ptr<ast::Module> &module,
-                   const std::string &filename) {
+void compileModule(std::unique_ptr<ast::Module> &module, const std::string &filename) {
   auto moduleId = filename;
 
   llvm::LLVMContext ctx;
@@ -550,6 +586,9 @@ void compileModule(std::unique_ptr<ast::Module> &module,
     mod.print(llvm::outs(), nullptr);
     llvm::outs().flush();
     throw std::runtime_error("Module verification failed");
+  } else {
+    mod.print(llvm::outs(), nullptr);
+    llvm::outs().flush();
   }
 
   runMPM(mod); // info: does not work, programs will malfunction

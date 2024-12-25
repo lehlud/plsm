@@ -1,22 +1,35 @@
-fun addFirst(n : i32) i32 {
-  var result : i32;
-  result = 0;
+fun write(fd : i64, msg : &u8, len : u64) i64 {
+  inline asm (
+    "mov $0, %rax"         // syscall: write
+    "mov $1, %rdi"         // file descriptor: stdout
+    "mov $2, %rsi"         // message to write
+    "mov $3, %rdx"         // length of message
+    "syscall"              // make the syscall
+    :
+    : "r"(1 as i64), "r"(1 as i64), "r"(msg), "r"(len)  // input: different params
+    : "rax", "rdi", "rsi", "rdx"                        // clobbered registers
+  );
 
-  var i : i32;
-  i = 0;
-  while (i < n) {
-    result = result + i;
-    i = i + 1;
-  }
-
-  ret result;
+  ret 0;
 }
 
-// fun f(n : i32) i32 {
-//   if (n < 2) ret n;
-//   ret f(n - 1);
-// }
+fun exit(code : u8) i64 {
+  inline asm (
+    "mov $0, %rax"
+    "mov $1, %rdi"
+    "syscall"
+    :
+    : "r"(60 as i64), "r"(code as i64)
+    : "rax", "rdi"
+  );
+
+  ret 0;
+}
 
 fun main(argc : i32) u8 {
-  ret addFirst(argc) as u8;
+  write(1, "Hello World!\n", 14);
+  write(1, "Ə Ɛ Ƒ ƒ Ɠ Ɣ ƕ Ɩ Ɨ Ƙ ƙ ƚ ƛ Ɯ Ɲ ƞ Ɵ Ơ ơ Ƣ ƣ Ƥ ƥ\n", 69);
+  exit(10);
+
+  ret 0;
 }

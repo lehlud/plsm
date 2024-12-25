@@ -103,42 +103,57 @@ stmt
 
 inlineAsm
 	returns[std::unique_ptr<InlineAsm> ast]:
-	'inline' 'asm' '(' inlineAsmCode = string (
-		':' outputs += inlineAsmConstraint (
-			',' outputs += inlineAsmConstraint
-		)*
+	'inline' 'asm' '(' (inlineAsmCode += string)+ (
+		':' (
+			outputs += inlineAsmConstraint (
+				',' outputs += inlineAsmConstraint
+			)*
+		)?
 	)? (
-		':' inputs += inlineAsmConstraint (
-			',' inputs += inlineAsmConstraint
-		)*
-	)? (':' clobbers += string ( ',' clobbers += string)*)? ')' ';' {
-        auto code = $ctx->inlineAsmCode->value;
+		':' (
+			inputs += inlineAsmConstraint (
+				',' inputs += inlineAsmConstraint
+			)*
+		)?
+	)? (':' (clobbers += string ( ',' clobbers += string)*)?)? ')' ';' {
+          std::string code = "";
+          for (auto &asmCode : $ctx->inlineAsmCode) {
+               code += asmCode->value;
+               code += ";";
+          }
+          code.pop_back();
 
-        std::vector<std::unique_ptr<InlineAsmConstraint>> outputs;
-        for (auto &output : $ctx->outputs) {
-            outputs.push_back(std::move(output->ast));
-        }
+          std::vector<std::unique_ptr<InlineAsmConstraint>> outputs;
+          for (auto &output : $ctx->outputs) {
+               outputs.push_back(std::move(output->ast));
+          }
 
-        std::vector<std::unique_ptr<InlineAsmConstraint>> inputs;
-        for (auto &input : $ctx->inputs) {
-            inputs.push_back(std::move(input->ast));
-        }
+          std::vector<std::unique_ptr<InlineAsmConstraint>> inputs;
+          for (auto &input : $ctx->inputs) {
+               inputs.push_back(std::move(input->ast));
+          }
 
-        std::vector<std::string> clobbers;
-        for (auto &clobber : $ctx->clobbers) {
-            clobbers.push_back(clobber->value);
-        }
+          std::vector<std::string> clobbers;
+          for (auto &clobber : $ctx->clobbers) {
+               clobbers.push_back(clobber->value);
+          }
 
-        $ast = std::make_unique<InlineAsm>(
-            getSourceRange($ctx), code, std::move(outputs), std::move(inputs), clobbers);
+          $ast = std::make_unique<InlineAsm>(
+               getSourceRange($ctx), code, std::move(outputs), std::move(inputs), clobbers);
     };
 
 inlineAsmConstraint
 	returns[std::unique_ptr<InlineAsmConstraint> ast]:
-	string '(' IDENTIFIER ')' {
+	string '(' expr ')' {
         auto constraint = $ctx->string()->value;
-        auto variable = $ctx->IDENTIFIER()->getText();
-        $ast = std::make_unique<InlineAsmConstraint>(getSourceRange($ctx), constraint, variable);
+        $ast = std::make_unique<InlineAsmConstraint>(getSourceRange($ctx), constraint, std::move($ctx->expr()->ast));
+    };
+
+inlineAsmLvalueConstraint
+	returns[std::unique_ptr<InlineAsmConstraint> ast]:
+	string '(' lvalue ')' {
+        auto constraint = $ctx->string()->value;
+        $ast = std::make_unique<InlineAsmConstraint>(getSourceRange($ctx), constraint, std::move($ctx->lvalue()->ast));
     };
 
 whileStmt
@@ -185,8 +200,14 @@ implDeclAssignStmt
 
 assignStmt
 	returns[std::unique_ptr<AssignStmt> ast]:
-	lval = expr '=' rval = expr ';' {
+	lval = lvalue '=' rval = expr ';' {
           $ast = std::make_unique<AssignStmt>(getSourceRange($ctx), std::move($ctx->lval->ast), std::move($ctx->rval->ast));
+     };
+
+lvalue
+	returns[std::unique_ptr<Expr> ast]:
+	identifier {
+          $ast = ptrcast<Expr>($ctx->identifier()->ast);
      };
 
 retStmt
@@ -362,6 +383,9 @@ factorExpr
 	| lambdaExpr {
           $ast = ptrcast<Expr>($ctx->lambdaExpr()->ast);
      }
+	| string {
+          $ast = std::unique_ptr<Expr>((Expr *) new StringValue(getSourceRange($ctx), $ctx->string()->value));
+     }
 	| '(' expr ')' {
           $ast = std::move($ctx->expr()->ast);
      };
@@ -394,6 +418,11 @@ typeName
           auto text = $ctx->IDENTIFIER()->getText();
           auto named = std::make_unique<NamedTypeName>(getSourceRange($ctx), text);
           $ast = ptrcast<TypeName>(named);
+     }
+	| '&' typeName {
+          auto typeName = std::move($ctx->typeName()->ast);
+          auto ptr = std::make_unique<PointerTypeName>(getSourceRange($ctx), std::move(typeName));
+          $ast = ptrcast<TypeName>(ptr);
      };
 
 string
@@ -402,6 +431,12 @@ string
           auto encoded = $ctx->STRING()->getText();
           auto decoded = boost::json::parse(encoded);
           $value = decoded.as_string();
+     };
+
+identifier
+	returns[std::unique_ptr<Identifier> ast]:
+	IDENTIFIER {
+          $ast = std::make_unique<Identifier>(getSourceRange($ctx), $ctx->IDENTIFIER()->getText());
      };
 
 STRING: '"' (ESC | ~["\\\r\n])* '"';
